@@ -1,0 +1,52 @@
+2026-05-21 10:00:00 | INFO     | __main__:run:28         | ============================================================
+2026-05-21 10:00:00 | INFO     | __main__:run:29         | AutoDoc run started — input: ./autodoc
+2026-05-21 10:00:00 | INFO     | __main__:run:30         | LLM mode: mock
+2026-05-21 10:00:00 | INFO     | __main__:run:38         | Step 1/4 — fetching codebase
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.fetcher:fetch_codebase:12 | Fetching codebase from: ./autodoc
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.fetcher:_resolve_local_path:48 | Using local path: /home/user/autodoc-agent/autodoc
+2026-05-21 10:00:00 | INFO     | __main__:run:42         | Step 2/4 — parsing files
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.parser:parse_codebase:20 | Scanning for Python files under: /home/user/autodoc-agent/autodoc
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/__init__.py — classes: 0, functions: 0, imports: 0
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/config.py — classes: 1, functions: 0, imports: 3
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/logger.py — classes: 0, functions: 2, imports: 4
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/ingestion/__init__.py — classes: 0, functions: 0, imports: 0
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/ingestion/fetcher.py — classes: 0, functions: 2, imports: 5
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/ingestion/parser.py — classes: 0, functions: 2, imports: 4
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/ingestion/graph.py — classes: 0, functions: 1, imports: 2
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/ingestion/detector.py — classes: 0, functions: 1, imports: 5
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/models/__init__.py — classes: 0, functions: 0, imports: 0
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/models/manifest.py — classes: 8, functions: 0, imports: 3
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/llm/__init__.py — classes: 0, functions: 1, imports: 2
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/llm/base.py — classes: 1, functions: 0, imports: 1
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/llm/client.py — classes: 1, functions: 0, imports: 3
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38 | Parsed: autodoc/llm/mock.py — classes: 1, functions: 0, imports: 2
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.parser:parse_codebase:44 | Parse complete — parsed: 14, skipped (dirs): 0, skipped (syntax): 0
+2026-05-21 10:00:00 | INFO     | __main__:run:46         | Step 3/4 — building dependency graph
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.graph:build_dependency_graph:14 | Building dependency graph for 14 modules
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:18 | Known modules: ['autodoc', 'autodoc.config', 'autodoc.ingestion', ...]
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.ingestion.fetcher → autodoc.logger
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.ingestion.parser → autodoc.logger
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.ingestion.parser → autodoc.models.manifest
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.ingestion.graph → autodoc.logger
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.ingestion.graph → autodoc.models.manifest
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.ingestion.detector → autodoc.logger
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.ingestion.detector → autodoc.models.manifest
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.llm → autodoc.llm.base
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.llm.client → autodoc.llm.base
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_reward:28 | Edge: autodoc.llm.client → autodoc.logger
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.llm.mock → autodoc.llm.base
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28 | Edge: autodoc.llm.mock → autodoc.logger
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.graph:build_dependency_graph:34 | Dependency graph complete — 14 nodes, 12 edges
+2026-05-21 10:00:00 | INFO     | __main__:run:52         | Step 4/4 — detecting tech stack
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.detector:detect_stack:54 | Detecting tech stack from: /home/user/autodoc-agent/autodoc
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.detector:_collect_dependencies:62 | Reading pyproject.toml
+2026-05-21 10:00:00 | DEBUG    | autodoc.ingestion.detector:_parse_pyproject:78 | pyproject.toml — found 9 deps
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.detector:detect_stack:60 | Stack detected — frameworks: [] | databases: [] | test: ['pytest'] | queues: [] | other: ['Pydantic', 'LangGraph', 'Anthropic', 'Rich', 'Typer']
+2026-05-21 10:00:00 | INFO     | __main__:run:68         | Manifest saved to output/manifest.json
+2026-05-21 10:00:00 | INFO     | __main__:run:70         | Run complete — manifest saved to output/manifest.json
+2026-05-21 10:00:00 | INFO     | __main__:run:71         | Project : autodoc
+2026-05-21 10:00:00 | INFO     | __main__:run:71         | Files   : 14 | Lines: 687
+2026-05-21 10:00:00 | INFO     | __main__:run:71         | Stack   : none detected
+2026-05-21 10:00:00 | INFO     | __main__:run:71         | Entries : main
+2026-05-21 10:00:00 | INFO     | __main__:run:71         | Core    : autodoc.logger, autodoc.models.manifest
+2026-05-21 10:00:00 | INFO     | __main__:run:72         | ============================================================
