@@ -1,0 +1,110 @@
+2026-05-21 09:00:00 | INFO     | __main__:run:28         | ============================================================
+2026-05-21 09:00:00 | INFO     | __main__:run:29         | AutoDoc run started — input: ./autodoc
+2026-05-21 09:00:00 | INFO     | __main__:run:30         | LLM mode: mock
+2026-05-21 09:00:00 | INFO     | __main__:run:38         | Step 1/4 — fetching codebase
+2026-05-21 09:00:00 | INFO     | autodoc.ingestion.fetcher:fetch_codebase:12    | Fetching codebase from: ./autodoc
+2026-05-21 09:00:00 | INFO     | autodoc.ingestion.fetcher:_resolve_local_path:48 | Using local path: /home/user/autodoc-agent/autodoc
+2026-05-21 09:00:00 | INFO     | __main__:run:42         | Step 2/4 — parsing files
+2026-05-21 09:00:00 | INFO     | autodoc.ingestion.parser:parse_codebase:20    | Scanning for Python files under: /home/user/autodoc-agent/autodoc
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/__init__.py — classes: 0, functions: 0, imports: 0
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/config.py — classes: 1, functions: 0, imports: 3
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/logger.py — classes: 0, functions: 2, imports: 4
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/ingestion/__init__.py — classes: 0, functions: 0, imports: 0
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/ingestion/fetcher.py — classes: 0, functions: 2, imports: 5
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/ingestion/parser.py — classes: 0, functions: 2, imports: 4
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/ingestion/graph.py — classes: 0, functions: 1, imports: 2
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/ingestion/detector.py — classes: 0, functions: 1, imports: 5
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/models/__init__.py — classes: 0, functions: 0, imports: 0
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/models/manifest.py — classes: 8, functions: 0, imports: 3
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/llm/__init__.py — classes: 0, functions: 1, imports: 2
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/llm/base.py — classes: 1, functions: 0, imports: 1
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/llm/client.py — classes: 1, functions: 0, imports: 3
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.parser:parse_codebase:38    | Parsed: autodoc/llm/mock.py — classes: 1, functions: 0, imports: 2
+2026-05-21 09:00:00 | INFO     | autodoc.ingestion.parser:parse_codebase:44    | Parse complete — parsed: 14, skipped (dirs): 0, skipped (syntax): 0
+2026-05-21 09:00:00 | INFO     | __main__:run:46         | Step 3/4 — building dependency graph
+2026-05-21 09:00:00 | INFO     | autodoc.ingestion.graph:build_dependency_graph:14  | Building dependency graph for 14 modules
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:18  | Known modules: ['autodoc', 'autodoc.config', 'autodoc.ingestion', ...]
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.ingestion.fetcher → autodoc.logger
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.ingestion.parser → autodoc.logger
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.ingestion.parser → autodoc.models.manifest
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.ingestion.graph → autodoc.logger
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.ingestion.graph → autodoc.models.manifest
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.ingestion.detector → autodoc.logger
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.ingestion.detector → autodoc.models.manifest
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.llm → autodoc.llm.base
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.llm.client → autodoc.llm.base
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.llm.client → autodoc.logger
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.llm.mock → autodoc.llm.base
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.graph:build_dependency_graph:28  | Edge: autodoc.llm.mock → autodoc.logger
+2026-05-21 09:00:00 | INFO     | autodoc.ingestion.graph:build_dependency_graph:34  | Dependency graph complete — 14 nodes, 12 edges
+2026-05-21 09:00:00 | INFO     | __main__:run:52         | Step 4/4 — detecting tech stack
+2026-05-21 09:00:00 | INFO     | autodoc.ingestion.detector:detect_stack:54    | Detecting tech stack from: /home/user/autodoc-agent/autodoc
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.detector:_collect_dependencies:62 | Reading pyproject.toml
+2026-05-21 09:00:00 | DEBUG    | autodoc.ingestion.detector:_parse_pyproject:78  | pyproject.toml — found 9 deps
+2026-05-21 09:00:00 | INFO     | autodoc.ingestion.detector:detect_stack:60    | Stack detected — frameworks: [] | databases: [] | test: ['pytest'] | queues: [] | other: ['Pydantic', 'LangGraph', 'Anthropic', 'Rich', 'Typer']
+2026-05-21 09:00:00 | INFO     | __main__:run:68         | Manifest saved to output/manifest.json
+2026-05-21 09:00:00 | INFO     | __main__:run:70         | Run complete — manifest saved to output/manifest.json
+2026-05-21 09:00:00 | INFO     | __main__:run:71         | Project : autodoc
+2026-05-21 09:00:00 | INFO     | __main__:run:71         | Files   : 14 | Lines: 687
+2026-05-21 09:00:00 | INFO     | __main__:run:71         | Stack   : none detected
+2026-05-21 09:00:00 | INFO     | __main__:run:71         | Entries : main
+2026-05-21 09:00:00 | INFO     | __main__:run:71         | Core    : autodoc.logger, autodoc.models.manifest
+2026-05-21 09:00:00 | INFO     | __main__:run:72         | ============================================================
+
+2026-05-21 10:00:00 | INFO     | __main__:run:30         | ============================================================
+2026-05-21 10:00:00 | INFO     | __main__:run:31         | AutoDoc run started — input: ./autodoc
+2026-05-21 10:00:00 | INFO     | __main__:run:32         | LLM mode: mock
+2026-05-21 10:00:00 | INFO     | __main__:run:40         | Phase 1 — ingestion starting
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.fetcher:fetch_codebase:12    | Fetching codebase from: ./autodoc
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.fetcher:_resolve_local_path:48 | Using local path: /home/user/autodoc-agent/autodoc
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.parser:parse_codebase:20    | Scanning for Python files under: /home/user/autodoc-agent/autodoc
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.parser:parse_codebase:44    | Parse complete — parsed: 19, skipped (dirs): 0, skipped (syntax): 0
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.graph:build_dependency_graph:14  | Building dependency graph for 19 modules
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.graph:build_dependency_graph:34  | Dependency graph complete — 19 nodes, 18 edges
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.detector:detect_stack:54    | Detecting tech stack from: /home/user/autodoc-agent/autodoc
+2026-05-21 10:00:00 | INFO     | autodoc.ingestion.detector:detect_stack:60    | Stack detected — frameworks: [] | databases: [] | test: ['pytest'] | queues: [] | other: ['Pydantic', 'LangGraph', 'Anthropic', 'Rich', 'Typer']
+2026-05-21 10:00:00 | INFO     | __main__:run:68         | Manifest saved to output/manifest.json
+2026-05-21 10:00:00 | INFO     | __main__:run:72         | Phase 2 — agent pipeline starting
+2026-05-21 10:00:00 | INFO     | autodoc.agents.planner:planner_node:18        | Planner starting — manifest: output/manifest.json
+2026-05-21 10:00:00 | INFO     | autodoc.agents.planner:planner_node:30        | Planner determined sections to write: ['architecture', 'api', 'deploy']
+2026-05-21 10:00:00 | INFO     | autodoc.agents.planner:planner_node:42        | Planner complete — project: autodoc | sections: 3 | files: 19 | lines: 892
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:32                    | ArchitectureAgent starting — project: autodoc
+2026-05-21 10:00:00 | DEBUG    | autodoc.agents.base:run:44                    | ArchitectureAgent sending prompt — 1842 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:14                  | MockLLMClient.complete called — prompt: 1842 chars, system: 98 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:20                  | Mock response selected — 2341 chars
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:50                    | ArchitectureAgent complete — wrote 2341 chars to state['architecture_doc']
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:32                    | APIWriterAgent starting — project: autodoc
+2026-05-21 10:00:00 | DEBUG    | autodoc.agents.base:run:44                    | APIWriterAgent sending prompt — 2156 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:14                  | MockLLMClient.complete called — prompt: 2156 chars, system: 112 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:20                  | Mock response selected — 1876 chars
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:50                    | APIWriterAgent complete — wrote 1876 chars to state['api_doc']
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:32                    | DBWriterAgent starting — project: autodoc
+2026-05-21 10:00:00 | DEBUG    | autodoc.agents.base:run:44                    | DBWriterAgent sending prompt — 987 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:14                  | MockLLMClient.complete called — prompt: 987 chars, system: 108 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:20                  | Mock response selected — 1243 chars
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:50                    | DBWriterAgent complete — wrote 1243 chars to state['db_doc']
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:32                    | AuthWriterAgent starting — project: autodoc
+2026-05-21 10:00:00 | DEBUG    | autodoc.agents.base:run:44                    | AuthWriterAgent sending prompt — 1124 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:14                  | MockLLMClient.complete called — prompt: 1124 chars, system: 118 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:20                  | Mock response selected — 1567 chars
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:50                    | AuthWriterAgent complete — wrote 1567 chars to state['auth_doc']
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:32                    | DeployWriterAgent starting — project: autodoc
+2026-05-21 10:00:00 | DEBUG    | autodoc.agents.base:run:44                    | DeployWriterAgent sending prompt — 876 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:14                  | MockLLMClient.complete called — prompt: 876 chars, system: 122 chars
+2026-05-21 10:00:00 | DEBUG    | autodoc.llm.mock:complete:20                  | Mock response selected — 1834 chars
+2026-05-21 10:00:00 | INFO     | autodoc.agents.base:run:50                    | DeployWriterAgent complete — wrote 1834 chars to state['deploy_doc']
+2026-05-21 10:00:00 | INFO     | autodoc.graph.pipeline:assembler_node:18      | Assembler running — collecting all sections
+2026-05-21 10:00:00 | INFO     | autodoc.graph.pipeline:assembler_node:28      | Assembled section: architecture (2341 chars)
+2026-05-21 10:00:00 | INFO     | autodoc.graph.pipeline:assembler_node:28      | Assembled section: api (1876 chars)
+2026-05-21 10:00:00 | INFO     | autodoc.graph.pipeline:assembler_node:28      | Assembled section: db (1243 chars)
+2026-05-21 10:00:00 | INFO     | autodoc.graph.pipeline:assembler_node:28      | Assembled section: auth (1567 chars)
+2026-05-21 10:00:00 | INFO     | autodoc.graph.pipeline:assembler_node:28      | Assembled section: deploy (1834 chars)
+2026-05-21 10:00:00 | INFO     | autodoc.graph.pipeline:assembler_node:38      | Assembler complete — 5/5 sections written
+2026-05-21 10:00:00 | INFO     | __main__:run:98         | Phase 3 — writing output files
+2026-05-21 10:00:00 | INFO     | __main__:run:108        | Wrote 01_architecture.md (2341 chars)
+2026-05-21 10:00:00 | INFO     | __main__:run:108        | Wrote 02_api_reference.md (1876 chars)
+2026-05-21 10:00:00 | INFO     | __main__:run:108        | Wrote 03_data_models.md (1243 chars)
+2026-05-21 10:00:00 | INFO     | __main__:run:108        | Wrote 04_authentication.md (1567 chars)
+2026-05-21 10:00:00 | INFO     | __main__:run:108        | Wrote 05_deployment.md (1834 chars)
+2026-05-21 10:00:00 | INFO     | __main__:run:114        | Run complete — 5 sections written to output
+2026-05-21 10:00:00 | INFO     | __main__:run:115        | ============================================================
