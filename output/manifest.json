@@ -1,0 +1,484 @@
+{
+  "project_name": "autodoc",
+  "root_path": "/home/user/autodoc-agent/autodoc",
+  "source": "./autodoc",
+  "total_files": 12,
+  "total_lines": 687,
+  "files": [
+    {
+      "path": "autodoc/__init__.py",
+      "module_name": "autodoc",
+      "docstring": null,
+      "classes": [],
+      "functions": [],
+      "imports": [],
+      "line_count": 0
+    },
+    {
+      "path": "autodoc/config.py",
+      "module_name": "autodoc.config",
+      "docstring": null,
+      "classes": [
+        {
+          "name": "Settings",
+          "bases": ["BaseSettings"],
+          "docstring": null,
+          "methods": [
+            {
+              "name": "ensure_dirs",
+              "args": [],
+              "return_annotation": "None",
+              "docstring": "Create output and temp directories if they do not exist.",
+              "line_number": 24,
+              "is_method": true
+            }
+          ],
+          "line_number": 8
+        }
+      ],
+      "functions": [],
+      "imports": [
+        { "module": "pathlib", "names": ["Path"], "is_from_import": true },
+        { "module": "pydantic", "names": ["Field"], "is_from_import": true },
+        { "module": "pydantic_settings", "names": ["BaseSettings", "SettingsConfigDict"], "is_from_import": true }
+      ],
+      "line_count": 30
+    },
+    {
+      "path": "autodoc/logger.py",
+      "module_name": "autodoc.logger",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "setup_logging",
+          "args": [
+            { "name": "level", "annotation": "str" },
+            { "name": "log_file", "annotation": "Path | None" }
+          ],
+          "return_annotation": "None",
+          "docstring": "Configure logging for the entire autodoc package.",
+          "line_number": 11,
+          "is_method": false
+        },
+        {
+          "name": "get_logger",
+          "args": [
+            { "name": "name", "annotation": "str" }
+          ],
+          "return_annotation": "logging.Logger",
+          "docstring": "Convenience wrapper used by every module in this codebase.",
+          "line_number": 42,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "logging", "names": [], "is_from_import": false },
+        { "module": "pathlib", "names": ["Path"], "is_from_import": true },
+        { "module": "rich.console", "names": ["Console"], "is_from_import": true },
+        { "module": "rich.logging", "names": ["RichHandler"], "is_from_import": true }
+      ],
+      "line_count": 48
+    },
+    {
+      "path": "autodoc/ingestion/__init__.py",
+      "module_name": "autodoc.ingestion",
+      "docstring": null,
+      "classes": [],
+      "functions": [],
+      "imports": [],
+      "line_count": 0
+    },
+    {
+      "path": "autodoc/ingestion/fetcher.py",
+      "module_name": "autodoc.ingestion.fetcher",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "fetch_codebase",
+          "args": [
+            { "name": "input_path", "annotation": "str" }
+          ],
+          "return_annotation": "tuple[Path, bool]",
+          "docstring": "Resolve input to a local directory path.",
+          "line_number": 12,
+          "is_method": false
+        },
+        {
+          "name": "cleanup",
+          "args": [
+            { "name": "path", "annotation": "Path" }
+          ],
+          "return_annotation": "None",
+          "docstring": "Remove a temporary cloned directory.",
+          "line_number": 52,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "shutil", "names": [], "is_from_import": false },
+        { "module": "tempfile", "names": [], "is_from_import": false },
+        { "module": "pathlib", "names": ["Path"], "is_from_import": true },
+        { "module": "git", "names": [], "is_from_import": false },
+        { "module": "autodoc.logger", "names": ["get_logger"], "is_from_import": true }
+      ],
+      "line_count": 58
+    },
+    {
+      "path": "autodoc/ingestion/parser.py",
+      "module_name": "autodoc.ingestion.parser",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "parse_codebase",
+          "args": [
+            { "name": "root", "annotation": "Path" }
+          ],
+          "return_annotation": "list[FileInfo]",
+          "docstring": "Walk all .py files under root and extract AST metadata from each.",
+          "line_number": 18,
+          "is_method": false
+        },
+        {
+          "name": "parse_file",
+          "args": [
+            { "name": "path", "annotation": "Path" },
+            { "name": "root", "annotation": "Path" }
+          ],
+          "return_annotation": "FileInfo | None",
+          "docstring": "Parse a single .py file and return a FileInfo object.",
+          "line_number": 44,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "ast", "names": [], "is_from_import": false },
+        { "module": "pathlib", "names": ["Path"], "is_from_import": true },
+        { "module": "autodoc.logger", "names": ["get_logger"], "is_from_import": true },
+        { "module": "autodoc.models.manifest", "names": ["ArgumentInfo", "ClassInfo", "FileInfo", "FunctionInfo", "ImportInfo"], "is_from_import": true }
+      ],
+      "line_count": 142
+    },
+    {
+      "path": "autodoc/ingestion/graph.py",
+      "module_name": "autodoc.ingestion.graph",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "build_dependency_graph",
+          "args": [
+            { "name": "files", "annotation": "list[FileInfo]" }
+          ],
+          "return_annotation": "DependencyGraph",
+          "docstring": "Build an import dependency graph from parsed file data.",
+          "line_number": 8,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "autodoc.logger", "names": ["get_logger"], "is_from_import": true },
+        { "module": "autodoc.models.manifest", "names": ["DependencyGraph", "FileInfo"], "is_from_import": true }
+      ],
+      "line_count": 48
+    },
+    {
+      "path": "autodoc/ingestion/detector.py",
+      "module_name": "autodoc.ingestion.detector",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "detect_stack",
+          "args": [
+            { "name": "root", "annotation": "Path" }
+          ],
+          "return_annotation": "StackInfo",
+          "docstring": "Infer the tech stack by reading dependency declaration files.",
+          "line_number": 52,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "configparser", "names": [], "is_from_import": false },
+        { "module": "tomllib", "names": [], "is_from_import": false },
+        { "module": "pathlib", "names": ["Path"], "is_from_import": true },
+        { "module": "autodoc.logger", "names": ["get_logger"], "is_from_import": true },
+        { "module": "autodoc.models.manifest", "names": ["StackInfo"], "is_from_import": true }
+      ],
+      "line_count": 118
+    },
+    {
+      "path": "autodoc/models/__init__.py",
+      "module_name": "autodoc.models",
+      "docstring": null,
+      "classes": [],
+      "functions": [],
+      "imports": [],
+      "line_count": 0
+    },
+    {
+      "path": "autodoc/models/manifest.py",
+      "module_name": "autodoc.models.manifest",
+      "docstring": null,
+      "classes": [
+        {
+          "name": "ArgumentInfo",
+          "bases": ["BaseModel"],
+          "docstring": null,
+          "methods": [],
+          "line_number": 8
+        },
+        {
+          "name": "FunctionInfo",
+          "bases": ["BaseModel"],
+          "docstring": null,
+          "methods": [],
+          "line_number": 13
+        },
+        {
+          "name": "ClassInfo",
+          "bases": ["BaseModel"],
+          "docstring": null,
+          "methods": [],
+          "line_number": 23
+        },
+        {
+          "name": "ImportInfo",
+          "bases": ["BaseModel"],
+          "docstring": null,
+          "methods": [],
+          "line_number": 31
+        },
+        {
+          "name": "FileInfo",
+          "bases": ["BaseModel"],
+          "docstring": null,
+          "methods": [],
+          "line_number": 37
+        },
+        {
+          "name": "StackInfo",
+          "bases": ["BaseModel"],
+          "docstring": null,
+          "methods": [],
+          "line_number": 47
+        },
+        {
+          "name": "DependencyGraph",
+          "bases": ["BaseModel"],
+          "docstring": null,
+          "methods": [
+            {
+              "name": "get_entry_points",
+              "args": [],
+              "return_annotation": "list[str]",
+              "docstring": "Modules that nothing else imports — CLI scripts, app entry points.",
+              "line_number": 58,
+              "is_method": true
+            },
+            {
+              "name": "get_core_modules",
+              "args": [
+                { "name": "threshold", "annotation": "int" }
+              ],
+              "return_annotation": "list[str]",
+              "docstring": "Modules imported by threshold or more other modules.",
+              "line_number": 66,
+              "is_method": true
+            }
+          ],
+          "line_number": 55
+        },
+        {
+          "name": "CodebaseManifest",
+          "bases": ["BaseModel"],
+          "docstring": null,
+          "methods": [
+            {
+              "name": "save",
+              "args": [
+                { "name": "path", "annotation": "Path" }
+              ],
+              "return_annotation": "None",
+              "docstring": "Serialize to JSON and write to disk.",
+              "line_number": 88,
+              "is_method": true
+            },
+            {
+              "name": "load",
+              "args": [
+                { "name": "path", "annotation": "Path" }
+              ],
+              "return_annotation": "CodebaseManifest",
+              "docstring": "Reconstruct a full typed manifest from a saved JSON file.",
+              "line_number": 95,
+              "is_method": true
+            },
+            {
+              "name": "summary",
+              "args": [],
+              "return_annotation": "str",
+              "docstring": "One-paragraph human-readable summary for logging.",
+              "line_number": 100,
+              "is_method": true
+            }
+          ],
+          "line_number": 78
+        }
+      ],
+      "functions": [],
+      "imports": [
+        { "module": "pathlib", "names": ["Path"], "is_from_import": true },
+        { "module": "typing", "names": ["Optional"], "is_from_import": true },
+        { "module": "pydantic", "names": ["BaseModel", "Field"], "is_from_import": true }
+      ],
+      "line_count": 112
+    },
+    {
+      "path": "autodoc/llm/__init__.py",
+      "module_name": "autodoc.llm",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "get_llm_client",
+          "args": [],
+          "return_annotation": "BaseLLMClient",
+          "docstring": "Factory — returns MockLLMClient or AnthropicClient based on env config.",
+          "line_number": 7,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "os", "names": [], "is_from_import": false },
+        { "module": "autodoc.llm.base", "names": ["BaseLLMClient"], "is_from_import": true }
+      ],
+      "line_count": 28
+    },
+    {
+      "path": "autodoc/llm/base.py",
+      "module_name": "autodoc.llm.base",
+      "docstring": null,
+      "classes": [
+        {
+          "name": "BaseLLMClient",
+          "bases": ["ABC"],
+          "docstring": "Abstract base class for all LLM clients in AutoDoc.",
+          "methods": [
+            {
+              "name": "complete",
+              "args": [
+                { "name": "prompt", "annotation": "str" },
+                { "name": "system", "annotation": "str" }
+              ],
+              "return_annotation": "str",
+              "docstring": "Send a prompt and return the model's text response.",
+              "line_number": 18,
+              "is_method": true
+            }
+          ],
+          "line_number": 6
+        }
+      ],
+      "functions": [],
+      "imports": [
+        { "module": "abc", "names": ["ABC", "abstractmethod"], "is_from_import": true }
+      ],
+      "line_count": 28
+    },
+    {
+      "path": "autodoc/llm/client.py",
+      "module_name": "autodoc.llm.client",
+      "docstring": null,
+      "classes": [
+        {
+          "name": "AnthropicClient",
+          "bases": ["BaseLLMClient"],
+          "docstring": "Production LLM client using the Anthropic Claude API.",
+          "methods": [
+            {
+              "name": "complete",
+              "args": [
+                { "name": "prompt", "annotation": "str" },
+                { "name": "system", "annotation": "str" }
+              ],
+              "return_annotation": "str",
+              "docstring": null,
+              "line_number": 22,
+              "is_method": true
+            }
+          ],
+          "line_number": 10
+        }
+      ],
+      "functions": [],
+      "imports": [
+        { "module": "anthropic", "names": [], "is_from_import": false },
+        { "module": "autodoc.llm.base", "names": ["BaseLLMClient"], "is_from_import": true },
+        { "module": "autodoc.logger", "names": ["get_logger"], "is_from_import": true }
+      ],
+      "line_count": 52
+    },
+    {
+      "path": "autodoc/llm/mock.py",
+      "module_name": "autodoc.llm.mock",
+      "docstring": null,
+      "classes": [
+        {
+          "name": "MockLLMClient",
+          "bases": ["BaseLLMClient"],
+          "docstring": "Mock LLM client for development without an API key.",
+          "methods": [
+            {
+              "name": "complete",
+              "args": [
+                { "name": "prompt", "annotation": "str" },
+                { "name": "system", "annotation": "str" }
+              ],
+              "return_annotation": "str",
+              "docstring": null,
+              "line_number": 16,
+              "is_method": true
+            }
+          ],
+          "line_number": 8
+        }
+      ],
+      "functions": [],
+      "imports": [
+        { "module": "autodoc.llm.base", "names": ["BaseLLMClient"], "is_from_import": true },
+        { "module": "autodoc.logger", "names": ["get_logger"], "is_from_import": true }
+      ],
+      "line_count": 98
+    }
+  ],
+  "stack": {
+    "language": "python",
+    "frameworks": [],
+    "databases": [],
+    "test_frameworks": ["pytest"],
+    "task_queues": [],
+    "other_tools": ["Pydantic", "LangGraph", "Anthropic", "Rich", "Typer"]
+  },
+  "dependency_graph": {
+    "edges": {
+      "autodoc": [],
+      "autodoc.config": ["pydantic_settings", "pydantic"],
+      "autodoc.logger": [],
+      "autodoc.ingestion": [],
+      "autodoc.ingestion.fetcher": ["autodoc.logger"],
+      "autodoc.ingestion.parser": ["autodoc.logger", "autodoc.models.manifest"],
+      "autodoc.ingestion.graph": ["autodoc.logger", "autodoc.models.manifest"],
+      "autodoc.ingestion.detector": ["autodoc.logger", "autodoc.models.manifest"],
+      "autodoc.models": [],
+      "autodoc.models.manifest": [],
+      "autodoc.llm": ["autodoc.llm.base"],
+      "autodoc.llm.base": [],
+      "autodoc.llm.client": ["autodoc.llm.base", "autodoc.logger"],
+      "autodoc.llm.mock": ["autodoc.llm.base", "autodoc.logger"]
+    }
+  }
+}
