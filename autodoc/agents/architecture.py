@@ -1,54 +1,83 @@
 from autodoc.agents.base import BaseAgent
-from autodoc.models.manifest import CodebaseManifest
+from autodoc.logger import get_logger
+from autodoc.models.manifest import CodebaseManifest, FileInfo
+from autodoc.utils.prompt_renderer import render_prompt
+
+logger = get_logger(__name__)
 
 
 class ArchitectureAgent(BaseAgent):
     """
     Writes the system architecture section.
 
-    Covers: project overview, component breakdown, dependency structure,
-    entry points, core modules, and key design observations.
-    Full prompt engineering happens in Day 3 — this establishes the pattern.
+    Extracts layered structural information from the manifest —
+    entry points, core modules, dependency edges, per-file summaries —
+    and renders the architecture.j2 prompt template with full context
+    before sending to the LLM.
     """
 
     _state_key = "architecture_doc"
     _system = (
         "You are a senior software architect writing technical documentation. "
         "Your architecture sections are clear, precise, and structured so that "
-        "a new developer can understand the entire system within minutes."
+        "a new developer can understand the entire system within minutes. "
+        "Always reference actual module names and real design patterns visible "
+        "in the code — never use generic placeholders."
     )
 
     def _build_prompt(self, manifest: CodebaseManifest) -> str:
         entry_points = manifest.dependency_graph.get_entry_points()
         core_modules = manifest.dependency_graph.get_core_modules()
 
-        files_summary = "\n".join(
-            f"- {f.module_name} ({f.line_count} lines) — "
-            f"{len(f.classes)} classes, {len(f.functions)} functions"
-            for f in manifest.files
+        logger.debug(
+            "ArchitectureAgent context — entry_points: %s | core_modules: %s",
+            entry_points,
+            core_modules,
         )
 
-        return f"""Write a complete system architecture section for the following Python project.
+        files_context = [
+            self._build_file_context(f)
+            for f in manifest.files
+        ]
 
-Project: {manifest.project_name}
-Total files: {manifest.total_files}
-Total lines: {manifest.total_lines}
-Tech stack: {', '.join(manifest.stack.frameworks + manifest.stack.databases + manifest.stack.other_tools) or 'not detected'}
+        edges = {
+            module: deps
+            for module, deps in manifest.dependency_graph.edges.items()
+            if deps
+        }
 
-Entry points (nothing imports these — they are top-level runners):
-{', '.join(entry_points) or 'none detected'}
+        context = {
+            "project_name":    manifest.project_name,
+            "total_files":     manifest.total_files,
+            "total_lines":     manifest.total_lines,
+            "frameworks":      manifest.stack.frameworks,
+            "databases":       manifest.stack.databases,
+            "test_frameworks": manifest.stack.test_frameworks,
+            "task_queues":     manifest.stack.task_queues,
+            "other_tools":     manifest.stack.other_tools,
+            "entry_points":    entry_points,
+            "core_modules":    core_modules,
+            "files":           files_context,
+            "edges":           edges,
+        }
 
-Core modules (imported by 3+ other modules — high importance):
-{', '.join(core_modules) or 'none detected'}
+        return render_prompt("architecture.j2", context)
 
-All modules:
-{files_summary}
-
-Write the following subsections in Markdown:
-1. Overview — what this project does in 2-3 sentences
-2. Project structure — how the codebase is organized
-3. Core components — what each major module/package does
-4. Data flow — how data moves through the system
-5. Key design decisions — patterns and architectural choices observed
-
-Be specific. Reference actual module names. Do not invent details not supported by the data above."""
+    def _build_file_context(self, file: FileInfo) -> dict:
+        """
+        Build a serializable dict for a single file's template context.
+        Extracts only what the template needs — names, not full objects.
+        """
+        return {
+            "module_name": file.module_name,
+            "line_count":  file.line_count,
+            "docstring":   file.docstring,
+            "classes":     [c.name for c in file.classes],
+            "functions":   [f.name for f in file.functions],
+            "imports":     [
+                f"{i.module}" + (
+                    f".{', '.join(i.names)}" if i.names else ""
+                )
+                for i in file.imports
+            ],
+        }
