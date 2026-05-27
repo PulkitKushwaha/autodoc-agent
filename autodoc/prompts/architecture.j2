@@ -1,0 +1,105 @@
+You are a senior software architect writing technical documentation for a Python project.
+Your task is to write a complete, accurate system architecture section in Markdown.
+Be specific, meaning, reference actual module names, actual patterns, actual design decisions.
+Do not invent details not supported by the data provided below.
+
+═══════════════════════════════════════════════════
+PROJECT OVERVIEW
+═══════════════════════════════════════════════════
+
+Project name : {{ project_name }}
+Total files  : {{ total_files }}
+Total lines  : {{ total_lines }}
+Language     : Python 3.11+
+
+{% if frameworks or databases or other_tools %}
+DETECTED STACK
+{% if frameworks %}Frameworks  : {{ frameworks | join(', ') }}{% endif %}
+{% if databases %}Databases   : {{ databases | join(', ') }}{% endif %}
+{% if test_frameworks %}Testing     : {{ test_frameworks | join(', ') }}{% endif %}
+{% if task_queues %}Task queues : {{ task_queues | join(', ') }}{% endif %}
+{% if other_tools %}Other tools : {{ other_tools | join(', ') }}{% endif %}
+{% endif %}
+
+═══════════════════════════════════════════════════
+ENTRY POINTS
+(modules that nothing else imports — top-level runners and CLI scripts)
+═══════════════════════════════════════════════════
+
+{% if entry_points %}
+{% for ep in entry_points %}
+- {{ ep }}
+{% endfor %}
+{% else %}
+No entry points detected.
+{% endif %}
+
+═══════════════════════════════════════════════════
+CORE MODULES
+(imported by 3 or more other modules — highest importance)
+═══════════════════════════════════════════════════
+
+{% if core_modules %}
+{% for cm in core_modules %}
+- {{ cm }}
+{% endfor %}
+{% else %}
+No core modules detected.
+{% endif %}
+
+═══════════════════════════════════════════════════
+ALL MODULES — FILE BY FILE
+═══════════════════════════════════════════════════
+
+{% for file in files %}
+{{ file.module_name }} ({{ file.line_count }} lines)
+  Classes   : {% if file.classes %}{{ file.classes | join(', ') }}{% else %}none{% endif %}
+  Functions : {% if file.functions %}{{ file.functions | join(', ') }}{% else %}none{% endif %}
+  Imports   : {% if file.imports %}{{ file.imports | join(', ') }}{% else %}none{% endif %}
+  Docstring : {{ file.docstring if file.docstring else 'none' }}
+
+{% endfor %}
+
+═══════════════════════════════════════════════════
+DEPENDENCY EDGES
+(A → B means module A imports module B)
+═══════════════════════════════════════════════════
+
+{% for module, deps in edges.items() %}
+{% if deps %}
+{{ module }} → {{ deps | join(', ') }}
+{% endif %}
+{% endfor %}
+
+═══════════════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════════════
+
+Using only the data above, write the following sections in Markdown:
+
+## Overview
+Two to three sentences describing what this project does and its primary purpose.
+Be specific — name the core technology choices and the problem being solved.
+
+## Project structure
+A code block showing the folder and file layout with one-line descriptions.
+Only include files listed above. Do not invent files.
+
+## Core components
+For each major package or module group, write a paragraph explaining what it does,
+what problem it solves, and how it relates to the rest of the system.
+Reference actual class and function names where relevant.
+
+## Dependency structure
+Describe the layering of the codebase based on the dependency edges above.
+Identify which modules are foundational (imported by many), which are entry points
+(imported by none), and what the overall flow of dependencies looks like.
+
+## Data flow
+A step-by-step description of how data moves through the system from input to output.
+Use the module names and function names from above — not generic placeholders.
+
+## Key design decisions
+Identify 3 to 5 specific architectural patterns or decisions visible in the code structure.
+Examples: strategy pattern, layered architecture, pipeline pattern, ABC enforcement,
+single-responsibility modules. Reference the actual modules that demonstrate each pattern.

@@ -1,68 +1,101 @@
 from autodoc.agents.base import BaseAgent
-from autodoc.models.manifest import CodebaseManifest, FunctionInfo
+from autodoc.logger import get_logger
+from autodoc.models.manifest import CodebaseManifest, FileInfo, FunctionInfo
+from autodoc.utils.prompt_renderer import render_prompt
+
+logger = get_logger(__name__)
 
 
 class APIWriterAgent(BaseAgent):
     """
     Writes the API reference section.
 
-    Extracts all public functions and classes from the manifest
-    and documents each with its signature, parameters, return type,
-    and docstring. Full prompt refinement in Day 3.
+    Extracts every public class and function from the manifest with
+    full signature context — argument names, type annotations, return
+    types, docstrings — and renders the api.j2 prompt template.
+    Private items (leading underscore) are excluded.
     """
 
     _state_key = "api_doc"
     _system = (
         "You are a technical writer producing API reference documentation. "
-        "Your output is precise, consistent, and uses standard Markdown "
-        "with code blocks for all signatures and examples."
+        "Your output is precise, consistent, and complete. "
+        "Every public class and function must be documented. "
+        "Use standard Markdown with fenced Python code blocks for all signatures. "
+        "Tables must have consistent column alignment."
     )
 
     def _build_prompt(self, manifest: CodebaseManifest) -> str:
-        public_api = self._extract_public_api(manifest)
+        modules_context = []
+        total_public_items = 0
 
-        return f"""Write a complete API reference section for the following Python project.
-
-Project: {manifest.project_name}
-
-Public API surface (classes and functions extracted from source):
-{public_api}
-
-Write the following in Markdown:
-1. Overview — one sentence describing the API surface
-2. Classes — for each class: description, constructor args, public methods
-3. Functions — for each public function: signature, parameters, return type, description
-4. Usage examples — 2-3 short code examples showing common usage patterns
-
-Use fenced code blocks for all signatures and examples.
-Only document what is listed above — do not invent additional APIs."""
-
-    def _extract_public_api(self, manifest: CodebaseManifest) -> str:
-        lines = []
         for file in manifest.files:
-            if not file.classes and not file.functions:
-                continue
-            lines.append(f"\n### {file.module_name}")
-            for cls in file.classes:
-                bases = f"({', '.join(cls.bases)})" if cls.bases else ""
-                lines.append(f"\nclass {cls.name}{bases}:")
-                if cls.docstring:
-                    lines.append(f'    """{cls.docstring}"""')
-                for method in cls.methods:
-                    if not method.name.startswith("_"):
-                        lines.append(f"    {self._format_fn(method)}")
-            for fn in file.functions:
-                if not fn.name.startswith("_"):
-                    lines.append(self._format_fn(fn))
-        return "\n".join(lines) if lines else "No public API surface detected."
+            public_classes = [
+                c for c in file.classes
+                if not c.name.startswith("_")
+            ]
+            public_functions = [
+                f for f in file.functions
+                if not f.name.startswith("_")
+            ]
 
-    def _format_fn(self, fn: FunctionInfo) -> str:
-        args = ", ".join(
-            f"{a.name}: {a.annotation}" if a.annotation else a.name
-            for a in fn.args
+            if not public_classes and not public_functions:
+                continue
+
+            total_public_items += len(public_classes) + len(public_functions)
+
+            modules_context.append({
+                "name":      file.module_name,
+                "classes":   [
+                    self._build_class_context(cls)
+                    for cls in public_classes
+                ],
+                "functions": [
+                    self._build_function_context(fn)
+                    for fn in public_functions
+                ],
+            })
+
+        logger.debug(
+            "APIWriterAgent context — modules: %d | public items: %d",
+            len(modules_context),
+            total_public_items,
         )
-        ret = f" -> {fn.return_annotation}" if fn.return_annotation else ""
-        sig = f"def {fn.name}({args}){ret}"
-        if fn.docstring:
-            return f'{sig}\n    """{fn.docstring}"""'
-        return sig
+
+        context = {
+            "project_name":      manifest.project_name,
+            "total_modules":     len(modules_context),
+            "total_public_items": total_public_items,
+            "modules":           modules_context,
+        }
+
+        return render_prompt("api.j2", context)
+
+    def _build_class_context(self, cls) -> dict:
+        public_methods = [
+            m for m in cls.methods
+            if not m.name.startswith("_")
+        ]
+        return {
+            "name":     cls.name,
+            "bases":    cls.bases,
+            "docstring": cls.docstring,
+            "methods":  [
+                self._build_function_context(m)
+                for m in public_methods
+            ],
+        }
+
+    def _build_function_context(self, fn: FunctionInfo) -> dict:
+        args = []
+        for arg in fn.args:
+            if arg.annotation:
+                args.append(f"{arg.name}: {arg.annotation}")
+            else:
+                args.append(arg.name)
+        return {
+            "name":              fn.name,
+            "args":              args,
+            "return_annotation": fn.return_annotation,
+            "docstring":         fn.docstring,
+        }
