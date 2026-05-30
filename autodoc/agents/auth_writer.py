@@ -1,50 +1,150 @@
 from autodoc.agents.base import BaseAgent
+from autodoc.logger import get_logger
 from autodoc.models.manifest import CodebaseManifest
+from autodoc.utils.prompt_renderer import render_prompt
+
+logger = get_logger(__name__)
+
+_AUTH_MODULE_KEYWORDS = {
+    "auth", "security", "token", "jwt", "permission",
+    "middleware", "session", "login", "oauth", "credential",
+}
+
+_AUTH_CLASS_KEYWORDS = {
+    "auth", "token", "permission", "user", "session",
+    "credential", "login", "jwt", "middleware", "bearer",
+}
+
+_AUTH_LIBRARIES = {
+    "python_jose":    "python-jose (JWT)",
+    "jwt":            "PyJWT",
+    "passlib":        "passlib (password hashing)",
+    "bcrypt":         "bcrypt",
+    "authlib":        "Authlib (OAuth)",
+    "fastapi_users":  "FastAPI Users",
+    "django_allauth": "django-allauth",
+    "flask_login":    "Flask-Login",
+    "flask_jwt_extended": "Flask-JWT-Extended",
+    "casbin":         "Casbin (authorization)",
+    "pyjwt":          "PyJWT",
+}
 
 
 class AuthWriterAgent(BaseAgent):
     """
     Writes the authentication and security section.
-    Detects auth patterns from module names and stack.
-    Full implementation in Day 4.
+
+    Detects auth patterns by scanning module names, class names,
+    and dependency stack for known auth libraries. Renders auth.j2
+    with the full discovered context.
     """
 
     _state_key = "auth_doc"
     _system = (
         "You are a security-focused technical writer. "
-        "Your authentication sections are accurate, precise, and cover "
-        "token flows, security measures, and implementation details."
+        "Your authentication sections are accurate and honest about uncertainty. "
+        "You document what is actually present in the code — "
+        "you never assume an auth mechanism that is not evidenced by the data. "
+        "Your security measures table is specific and actionable."
     )
 
     def _build_prompt(self, manifest: CodebaseManifest) -> str:
-        auth_modules = [
-            f.module_name for f in manifest.files
-            if any(kw in f.module_name.lower() for kw in
-                   ("auth", "security", "token", "jwt", "permission", "middleware"))
+        auth_modules = self._extract_auth_modules(manifest)
+        auth_classes = self._extract_auth_classes(manifest)
+        auth_libraries = self._detect_auth_libraries(manifest)
+
+        logger.debug(
+            "AuthWriterAgent context — auth modules: %d | "
+            "auth classes: %d | auth libraries: %s",
+            len(auth_modules),
+            len(auth_classes),
+            auth_libraries,
+        )
+
+        context = {
+            "project_name":  manifest.project_name,
+            "frameworks":    manifest.stack.frameworks,
+            "other_tools":   manifest.stack.other_tools,
+            "auth_modules":  auth_modules,
+            "auth_classes":  auth_classes,
+            "auth_libraries": auth_libraries,
+        }
+
+        return render_prompt("auth.j2", context)
+
+    def _extract_auth_modules(self, manifest: CodebaseManifest) -> list[dict]:
+        """Find files whose module name contains auth-related keywords."""
+        auth_modules = []
+        for file in manifest.files:
+            name_lower = file.module_name.lower()
+            if any(kw in name_lower for kw in _AUTH_MODULE_KEYWORDS):
+                auth_modules.append({
+                    "module_name": file.module_name,
+                    "docstring":   file.docstring,
+                    "classes": [
+                        {
+                            "name":      cls.name,
+                            "bases":     cls.bases,
+                            "docstring": cls.docstring,
+                            "methods": [
+                                m.name for m in cls.methods
+                                if not m.name.startswith("__")
+                            ],
+                        }
+                        for cls in file.classes
+                    ],
+                    "functions": [
+                        {
+                            "name":              fn.name,
+                            "args":              [
+                                f"{a.name}: {a.annotation}"
+                                if a.annotation else a.name
+                                for a in fn.args
+                            ],
+                            "return_annotation": fn.return_annotation,
+                            "docstring":         fn.docstring,
+                        }
+                        for fn in file.functions
+                        if not fn.name.startswith("_")
+                    ],
+                })
+                logger.debug(
+                    "AuthWriterAgent detected auth module: %s",
+                    file.module_name,
+                )
+        return auth_modules
+
+    def _extract_auth_classes(self, manifest: CodebaseManifest) -> list[dict]:
+        """Find classes with auth-related names across all modules."""
+        auth_classes = []
+        for file in manifest.files:
+            for cls in file.classes:
+                name_lower = cls.name.lower()
+                if any(kw in name_lower for kw in _AUTH_CLASS_KEYWORDS):
+                    auth_classes.append({
+                        "name":      cls.name,
+                        "module":    file.module_name,
+                        "docstring": cls.docstring,
+                    })
+                    logger.debug(
+                        "AuthWriterAgent detected auth class: %s in %s",
+                        cls.name, file.module_name,
+                    )
+        return auth_classes
+
+    def _detect_auth_libraries(self, manifest: CodebaseManifest) -> list[str]:
+        """Cross-reference detected stack against known auth libraries."""
+        all_tools = (
+            manifest.stack.frameworks
+            + manifest.stack.other_tools
+            + manifest.stack.databases
+        )
+        normalised = [
+            t.lower().replace("-", "_").replace(" ", "_")
+            for t in all_tools
         ]
-        auth_classes = [
-            f"{cls.name} in {file.module_name}"
-            for file in manifest.files
-            for cls in file.classes
-            if any(kw in cls.name.lower() for kw in
-                   ("auth", "token", "permission", "user", "session"))
-        ]
-
-        return f"""Write a complete authentication and security section for this project.
-
-Project: {manifest.project_name}
-Stack: {', '.join(manifest.stack.frameworks + manifest.stack.other_tools)}
-
-Auth-related modules detected:
-{chr(10).join(f'- {m}' for m in auth_modules) or '- none detected'}
-
-Auth-related classes detected:
-{chr(10).join(f'- {c}' for c in auth_classes) or '- none detected'}
-
-Write the following in Markdown:
-1. Authentication mechanism — what method is used (JWT, session, OAuth, etc.)
-2. Token or session flow — step-by-step how auth works
-3. Security measures — hashing, rate limiting, HTTPS, token expiry
-4. Key classes and functions — what handles auth in this codebase
-
-Base your response only on what is listed above."""
+        found = []
+        for pkg, label in _AUTH_LIBRARIES.items():
+            if any(pkg in tool for tool in normalised):
+                found.append(label)
+        return found
