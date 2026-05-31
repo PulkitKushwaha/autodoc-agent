@@ -1,60 +1,64 @@
 # Authentication and security
 
 ## Overview
-AutoDoc itself has no user-facing authentication — it is a command-line
-tool that runs locally. Security considerations are limited to API key
-management and safe handling of cloned repository content.
+AutoDoc is a local command-line tool with no user-facing authentication.
+It has no login system, no sessions, and no user accounts. Security
+considerations are limited to API key management, safe handling of
+cloned repositories, and ensuring no credentials are logged or committed
+to version control. The `AuthWriterAgent` is designed to document
+authentication in the **target** project being analyzed — not in
+AutoDoc itself.
 
-## API key management
+## Authentication mechanism
+AutoDoc uses no authentication mechanism for its own operation. The only
+credential it handles is the Anthropic API key, which is managed through
+environment variables following the twelve-factor app pattern.
 
-The only sensitive credential AutoDoc handles is the Anthropic API key.
+## Key components
 
-**Storage** — the key is stored exclusively in the `.env` file which is
-listed in `.gitignore` and never committed to version control. The
-`.env.example` file documents the required variable with an empty value.
+**`autodoc.config.Settings.anthropic_api_key`** — the only sensitive
+field in the codebase. Declared with `alias="ANTHROPIC_API_KEY"` to read
+from the standard env var name without the `AUTODOC_` prefix. Populated
+by Pydantic `BaseSettings` at startup from the `.env` file.
 
-**Access pattern** — the key is read once at startup by Pydantic
-`BaseSettings` in `config.py` and stored on the `settings` instance. No
-other module calls `os.getenv("ANTHROPIC_API_KEY")` directly. This ensures
-the key is accessed from exactly one place in the codebase.
+**`autodoc.llm.get_llm_client()`** — the only function that reads
+`AUTODOC_USE_MOCK`. When mock mode is active (`true` by default),
+`anthropic_api_key` is never accessed. The API key is only read when
+`AUTODOC_USE_MOCK=false` is explicitly set.
 
-**Mock mode** — when `AUTODOC_USE_MOCK=true` (the default), the API key
-is never read or used. `get_llm_client()` returns `MockLLMClient` without
-touching the key field at all. This means the project is safe to develop,
-test, and demonstrate without ever exposing a real credential.
-
-## Repository access
-
-When a GitHub URL is provided as input, AutoDoc clones the repository
-into a temporary directory using `gitpython` with `depth=1` (shallow
-clone). The temporary directory is always cleaned up in a `try/finally`
-block in `main.py` regardless of whether the run succeeds or fails.
-
-Private repositories require the user's git credentials to be configured
-in their local git environment — AutoDoc passes no credentials itself and
-stores nothing beyond the temporary clone lifetime.
+**`autodoc.ingestion.fetcher.cleanup()`** — removes temporary cloned
+repositories unconditionally via `try/finally` in `main.py`. Ensures
+cloned content is never left on disk after a run, whether it succeeds
+or fails.
 
 ## Security measures
 
 | Measure | Implementation |
 |---------|---------------|
-| API key never hardcoded | Pydantic BaseSettings + .env pattern |
-| API key never logged | logger calls never reference the key field |
-| .env gitignored | Enforced in .gitignore at project root |
-| Temp repos always cleaned up | try/finally in main.py |
-| No outbound requests beyond LLM | Only anthropic SDK makes network calls |
-| Shallow clone only | depth=1 limits exposure to latest commit |
+| API key never hardcoded | Pydantic `BaseSettings` reads from `.env` only |
+| API key never logged | No log statement references `settings.anthropic_api_key` |
+| `.env` gitignored | Root `.gitignore` excludes `.env` |
+| `.env.example` committed | Documents required variables with empty values |
+| Temp repos always cleaned up | `try/finally` block in `main.py` |
+| Shallow clone only | `depth=1` in `git.Repo.clone_from()` |
+| No outbound network beyond LLM | Only `anthropic` SDK makes external calls |
+| `StrictUndefined` in Jinja2 | Prompt variable errors caught at dev time |
+| Mock mode on by default | `AUTODOC_USE_MOCK=true` — key never needed in development |
 
-## Key classes and functions
+## Notes for developers
 
-`autodoc.config.Settings.anthropic_api_key` — the only field that holds
-the API key. Declared with `alias="ANTHROPIC_API_KEY"` to map from the
-standard env var name without the `AUTODOC_` prefix.
+**Never commit `.env`** — the `.gitignore` prevents it, but be aware
+of tools that bypass gitignore (e.g. `git add -f`).
 
-`autodoc.llm.get_llm_client()` — the only function that reads
-`AUTODOC_USE_MOCK` and decides whether the API key is needed. If mock
-mode is active, the key is never accessed.
+**Never log sensitive values** — if you add new configuration fields
+that hold credentials, ensure no log statement references them directly.
+The pattern throughout the codebase is to log the field name or a
+redacted indicator, never the value.
 
-`autodoc.ingestion.fetcher.cleanup()` — ensures cloned repositories are
-removed from disk. Called in `main.py`'s `finally` block so cleanup
-happens even when exceptions occur mid-run.
+**Temp directory hygiene** — if you add new code paths that clone or
+copy external content, always use `try/finally` for cleanup. The pattern
+is established in `main.py` — follow it.
+
+**Mock mode for CI** — all CI pipelines should run with `AUTODOC_USE_MOCK=true`.
+Never put a real API key in CI environment variables for test runs — the
+mock client produces deterministic output that is better suited for testing.

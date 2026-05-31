@@ -1,118 +1,15 @@
 # API reference
 
 ## Overview
-AutoDoc exposes a Python API surface across its ingestion, agent, and LLM
-modules. The primary entry point for programmatic use is `main.run()`.
-All other public interfaces are documented below by module.
-
-## Functions
-
-### `main`
-
-```python
-def run(input_path: str) -> dict
-```
-Orchestrates the full two-phase pipeline — ingestion followed by the agent
-graph. Accepts a GitHub URL or local path. Returns the final `DocState` dict
-containing all generated documentation sections.
-
-**Parameters**
-- `input_path: str` — GitHub URL (`https://github.com/...`) or local path
-
-**Returns**
-- `dict` — the final `DocState` with `final_docs`, `is_complete`, and all
-  section keys populated
-
----
-
-### `autodoc.ingestion.fetcher`
-
-```python
-def fetch_codebase(input_path: str) -> tuple[Path, bool]
-```
-Resolves the input to a local directory. Clones GitHub URLs via gitpython.
-Returns `(resolved_path, is_temp)` — `is_temp` tells the caller whether
-to call `cleanup()` when finished.
-
-```python
-def cleanup(path: Path) -> None
-```
-Removes a temporary cloned directory. Only call this when `is_temp` is
-`True` from `fetch_codebase`.
-
----
-
-### `autodoc.ingestion.parser`
-
-```python
-def parse_codebase(root: Path) -> list[FileInfo]
-```
-Recursively walks all `.py` files under `root`, skipping virtual
-environments and cache directories. Returns a list of `FileInfo` objects,
-one per file.
-
-```python
-def parse_file(path: Path, root: Path) -> FileInfo | None
-```
-Parses a single Python file using the `ast` module. Returns `None` if the
-file has a syntax error.
-
----
-
-### `autodoc.ingestion.graph`
-
-```python
-def build_dependency_graph(files: list[FileInfo]) -> DependencyGraph
-```
-Builds an internal import dependency graph from parsed file data. Only
-tracks imports between modules within the project — stdlib and third-party
-imports are excluded.
-
----
-
-### `autodoc.ingestion.detector`
-
-```python
-def detect_stack(root: Path) -> StackInfo
-```
-Infers the tech stack by reading `pyproject.toml`, `requirements.txt`,
-and `setup.cfg`. Maps known package names to framework, database, test,
-and task queue categories.
-
----
-
-### `autodoc.llm`
-
-```python
-def get_llm_client() -> BaseLLMClient
-```
-Factory function. Returns `MockLLMClient` when `AUTODOC_USE_MOCK=true`,
-otherwise returns `AnthropicClient`. This is the only place in the codebase
-that reads the mock flag.
-
----
-
-### `autodoc.logger`
-
-```python
-def setup_logging(level: str = "INFO", log_file: Path | None = None) -> None
-```
-Configures logging for the entire package. Call once at the top of
-`main.py` before any other imports. Sets up `RichHandler` for the terminal
-and an optional file handler.
-
-```python
-def get_logger(name: str) -> logging.Logger
-```
-Convenience wrapper. Every module calls `logger = get_logger(__name__)`.
+AutoDoc exposes a public Python API across its ingestion, agent, prompt
+rendering, and pipeline modules. The primary entry point is `main.run()`.
+All public classes and functions are documented below by module.
 
 ---
 
 ## Classes
 
 ### `autodoc.models.manifest.CodebaseManifest`
-
-The primary output of the ingestion engine and the input to every agent.
 
 ```python
 class CodebaseManifest(BaseModel):
@@ -126,94 +23,268 @@ class CodebaseManifest(BaseModel):
     dependency_graph: DependencyGraph
 ```
 
-**Methods**
+Root output model of the ingestion engine. Single source of truth
+for every agent's prompt context. Validated by Pydantic on construction.
 
-```python
-def save(self, path: Path) -> None
-```
-Serializes to indented JSON and writes to disk.
-
-```python
-@classmethod
-def load(cls, path: Path) -> CodebaseManifest
-```
-Reconstructs a fully typed manifest from a saved JSON file.
-
-```python
-def summary(self) -> str
-```
-Returns a human-readable summary string suitable for logging.
+| Method | Parameters | Returns | Description |
+|--------|-----------|---------|-------------|
+| `save` | `path: Path` | `None` | Serializes to indented JSON, writes to disk |
+| `load` | `path: Path` | `CodebaseManifest` | Reconstructs from saved JSON |
+| `summary` | — | `str` | Human-readable 5-line summary for logging |
 
 ---
 
 ### `autodoc.agents.base.BaseAgent`
 
-Abstract base class for all specialist writer agents.
-
 ```python
 class BaseAgent(ABC):
-    _state_key: str          # which DocState field this agent writes to
-    _system: str             # system prompt setting the agent's role
+    _state_key: str    # DocState key this agent writes to
+    _system: str       # system prompt setting the agent role
 ```
 
-**Methods**
+Abstract base for all writer agents. Subclasses implement `_build_prompt()`.
+The base handles LLM access, upstream error checking, logging, state updates.
 
-```python
-def run(self, state: DocState) -> DocState
-```
-Entry point called by LangGraph. Loads the manifest, builds the prompt,
-calls the LLM, writes the result to `state[_state_key]`, and returns the
-updated state. Handles upstream errors gracefully — skips execution if
-`state["error"]` is set.
+| Method | Parameters | Returns | Description |
+|--------|-----------|---------|-------------|
+| `run` | `state: DocState` | `DocState` | LangGraph node entry point |
+| `_build_prompt` | `manifest: CodebaseManifest` | `str` | Abstract — build the LLM prompt |
 
 ---
 
-### `autodoc.llm.base.BaseLLMClient`
+### `autodoc.agents.architecture.ArchitectureAgent`
 
 ```python
-class BaseLLMClient(ABC):
-    @abstractmethod
-    def complete(self, prompt: str, system: str = "") -> str: ...
+class ArchitectureAgent(BaseAgent):
+    _state_key = "architecture_doc"
 ```
 
-Abstract interface for all LLM clients. Subclasses: `AnthropicClient`,
-`MockLLMClient`.
+Extracts entry points, core modules, dependency edges, and per-file
+summaries. Renders `architecture.j2` with full structural context.
+
+---
+
+### `autodoc.agents.api_writer.APIWriterAgent`
+
+```python
+class APIWriterAgent(BaseAgent):
+    _state_key = "api_doc"
+```
+
+Extracts all public classes and functions with full signatures,
+type annotations, and docstrings. Filters private items (leading `_`).
+Renders `api.j2`.
+
+---
+
+### `autodoc.agents.db_writer.DBWriterAgent`
+
+```python
+class DBWriterAgent(BaseAgent):
+    _state_key = "db_doc"
+```
+
+Detects SQLAlchemy `Base` subclasses, Pydantic `BaseModel` subclasses,
+and classes in model/schema/entity files. Renders `db.j2`.
+
+| Method | Parameters | Returns | Description |
+|--------|-----------|---------|-------------|
+| `_extract_model_classes` | `manifest` | `list[dict]` | ORM and model-file classes |
+| `_extract_pydantic_models` | `manifest` | `list[dict]` | BaseModel subclasses only |
+
+---
+
+### `autodoc.agents.auth_writer.AuthWriterAgent`
+
+```python
+class AuthWriterAgent(BaseAgent):
+    _state_key = "auth_doc"
+```
+
+Scans for auth-keyword modules and classes. Cross-references detected
+stack against known auth libraries (PyJWT, passlib, Authlib, etc.).
+Renders `auth.j2`.
+
+| Method | Parameters | Returns | Description |
+|--------|-----------|---------|-------------|
+| `_extract_auth_modules` | `manifest` | `list[dict]` | Files with auth-keyword names |
+| `_extract_auth_classes` | `manifest` | `list[dict]` | Classes with auth-keyword names |
+| `_detect_auth_libraries` | `manifest` | `list[str]` | Known auth libs in stack |
+
+---
+
+### `autodoc.agents.deploy_writer.DeployWriterAgent`
+
+```python
+class DeployWriterAgent(BaseAgent):
+    _state_key = "deploy_doc"
+```
+
+Detects CI/CD config files, package manager, lockfile presence, and
+infrastructure files. Renders `deploy.j2` with full deployment context.
+
+| Method | Parameters | Returns | Description |
+|--------|-----------|---------|-------------|
+| `_detect_cicd_files` | `root: Path` | `list[str]` | CI/CD + infra files present |
+| `_detect_package_manager` | `root: Path` | `tuple[str, str, bool]` | manager, config file, has lockfile |
+
+---
+
+### `autodoc.llm.client.AnthropicClient`
+
+```python
+class AnthropicClient(BaseLLMClient):
+    MODEL = "claude-sonnet-4-20250514"
+    MAX_TOKENS = 4096
+```
+
+Production LLM client. Handles `RateLimitError` and `APIStatusError`.
+Activated by `AUTODOC_USE_MOCK=false` + `ANTHROPIC_API_KEY` set.
+
+---
+
+### `autodoc.llm.mock.MockLLMClient`
+
+```python
+class MockLLMClient(BaseLLMClient):
+```
+
+Development client. Routes by keyword, returns realistic responses.
+No API key needed. Default mode (`AUTODOC_USE_MOCK=true`).
+
+---
+
+## Functions
+
+### `main.run`
+
+```python
+def run(input_path: str) -> dict
+```
+
+Full two-phase pipeline. Phase 1: ingestion → manifest.json.
+Phase 2: LangGraph agents → 5 .md files in output/.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `input_path` | `str` | GitHub URL or local path |
+
+---
+
+### `autodoc.ingestion.fetcher.fetch_codebase`
+
+```python
+def fetch_codebase(input_path: str) -> tuple[Path, bool]
+```
+
+Returns `(path, is_temp)`. Call `cleanup(path)` when `is_temp` is `True`.
+
+---
+
+### `autodoc.ingestion.parser.parse_codebase`
+
+```python
+def parse_codebase(root: Path) -> list[FileInfo]
+```
+
+Recursively walks `.py` files, skipping venvs and caches.
+
+---
+
+### `autodoc.ingestion.graph.build_dependency_graph`
+
+```python
+def build_dependency_graph(files: list[FileInfo]) -> DependencyGraph
+```
+
+Internal imports only — stdlib and third-party excluded.
+
+---
+
+### `autodoc.ingestion.detector.detect_stack`
+
+```python
+def detect_stack(root: Path) -> StackInfo
+```
+
+Reads `pyproject.toml`, `requirements.txt`, `setup.cfg`.
+
+---
+
+### `autodoc.llm.get_llm_client`
+
+```python
+def get_llm_client() -> BaseLLMClient
+```
+
+Factory. Reads `AUTODOC_USE_MOCK`. Only decision point in the codebase.
+
+---
+
+### `autodoc.utils.prompt_renderer.render_prompt`
+
+```python
+def render_prompt(template_name: str, context: dict) -> str
+```
+
+Renders a Jinja2 template from `autodoc/prompts/`.
+`StrictUndefined` — missing variables raise immediately.
+
+---
+
+### `autodoc.graph.pipeline.build_graph`
+
+```python
+def build_graph() -> StateGraph
+```
+
+Wires and compiles the full LangGraph pipeline. Returns compiled graph.
 
 ---
 
 ## Usage examples
 
-**Run against a local project:**
+**Full pipeline:**
 ```python
 from main import run
+
 state = run("./my_python_project")
-print(state["final_docs"]["architecture"])
+for section, content in state["final_docs"].items():
+    print(f"\n=== {section} ===\n{content[:300]}")
 ```
 
-**Run against a GitHub repository:**
-```python
-from main import run
-state = run("https://github.com/username/repo")
-```
-
-**Use the ingestion engine standalone:**
+**Standalone ingestion:**
 ```python
 from pathlib import Path
 from autodoc.ingestion.parser import parse_codebase
 from autodoc.ingestion.detector import detect_stack
+from autodoc.ingestion.graph import build_dependency_graph
 from autodoc.models.manifest import CodebaseManifest
 
-root = Path("./my_project")
+root = Path("./myproject")
 files = parse_codebase(root)
-stack = detect_stack(root)
 manifest = CodebaseManifest(
-    project_name="my_project",
+    project_name=root.name,
     root_path=str(root),
     source="local",
     total_files=len(files),
     total_lines=sum(f.line_count for f in files),
     files=files,
-    stack=stack,
+    stack=detect_stack(root),
+    dependency_graph=build_dependency_graph(files),
 )
-manifest.save(Path("./output/manifest.json"))
+manifest.save(Path("output/manifest.json"))
+```
+
+**Render a prompt template directly:**
+```python
+from autodoc.utils.prompt_renderer import render_prompt
+
+prompt = render_prompt("db.j2", {
+    "project_name": "myapp",
+    "total_files": 10,
+    "databases": ["SQLAlchemy"],
+    "model_classes": [],
+    "pydantic_models": [],
+})
 ```

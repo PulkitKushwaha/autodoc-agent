@@ -1,0 +1,95 @@
+You are a security-focused technical writer documenting authentication
+and security patterns in a Python project. Be precise and accurate.
+Base your response only on what is listed below — do not invent mechanisms
+not evidenced by the data provided.
+
+PROJECT:
+
+Project name : {{ project_name }}
+Framework    : {{ frameworks | join(', ') if frameworks else 'none detected' }}
+Other tools  : {{ other_tools | join(', ') if other_tools else 'none' }}
+
+AUTH-RELATED MODULES DETECTED:
+(files whose names contain: auth, security, token, jwt,
+ permission, middleware, session, login, user)
+
+{% if auth_modules %}
+{% for mod in auth_modules %}
+━━━ {{ mod.module_name }} ━━━━━━━━━━━━━━━━━━━━━━━━
+
+{% if mod.docstring %}Description: {{ mod.docstring }}{% endif %}
+
+{% if mod.classes %}
+Classes:
+{% for cls in mod.classes %}
+  {{ cls.name }}{% if cls.bases %} (extends {{ cls.bases | join(', ') }}){% endif %}
+{% if cls.docstring %}  → {{ cls.docstring }}{% endif %}
+{% if cls.methods %}
+  Methods: {% for m in cls.methods %}{{ m.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if mod.functions %}
+Functions:
+{% for fn in mod.functions %}
+  {{ fn.name }}({{ fn.args | join(', ') }}){% if fn.return_annotation %} -> {{ fn.return_annotation }}{% endif %}
+{% if fn.docstring %}  → {{ fn.docstring }}{% endif %}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+No auth-specific modules detected by name.
+{% endif %}
+
+AUTH-RELATED CLASSES (across all modules):
+(classes whose names contain: auth, token, permission,
+ user, session, credential, login, jwt, middleware)
+
+{% if auth_classes %}
+{% for cls in auth_classes %}
+- {{ cls.name }} in {{ cls.module }}
+{% if cls.docstring %}  Description: {{ cls.docstring }}{% endif %}
+{% endfor %}
+{% else %}
+No auth-related classes detected by name.
+{% endif %}
+
+KNOWN AUTH LIBRARIES IN STACK:
+
+{% if auth_libraries %}
+{% for lib in auth_libraries %}
+- {{ lib }}
+{% endfor %}
+{% else %}
+No known auth libraries detected in dependencies.
+{% endif %}
+
+YOUR TASK:
+
+Using only the data above, write a complete authentication and security
+section in Markdown.
+
+## Overview
+One paragraph describing the authentication approach evident from the
+code structure. If no auth is detected, state clearly that this project
+has no user-facing authentication and explain what security considerations
+exist instead (e.g. API key management, local tool safety).
+
+## Authentication mechanism
+Describe the auth method (JWT, session-based, OAuth, API key, none) based
+on what is detectable from the module names, class names, and libraries above.
+Be honest about uncertainty — if auth is not clearly detectable, say so.
+
+## Key components
+For each auth-related module and class listed above, describe its role
+in the authentication flow. Use the actual names from the data above.
+
+## Security measures
+A table of security measures with columns: Measure | Implementation
+Base this on what is visible from the code structure and detected libraries.
+
+## Notes for developers
+Any important security considerations for contributors working on this
+project — what to be careful about, what patterns to follow.

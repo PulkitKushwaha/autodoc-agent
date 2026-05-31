@@ -1,60 +1,131 @@
-# Authentication and security
+# Deployment and infrastructure
 
-## Overview
-AutoDoc itself has no user-facing authentication — it is a command-line
-tool that runs locally. Security considerations are limited to API key
-management and safe handling of cloned repository content.
+## Requirements
 
-## API key management
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Python | 3.11+ | `tomllib` stdlib requires 3.11 |
+| uv | latest | Package manager, replaces pip + venv |
+| git | any recent | Required for GitHub URL input mode |
+| Anthropic API key | — | Only needed when `AUTODOC_USE_MOCK=false` |
 
-The only sensitive credential AutoDoc handles is the Anthropic API key.
+No external services required in mock mode (the default).
 
-**Storage** — the key is stored exclusively in the `.env` file which is
-listed in `.gitignore` and never committed to version control. The
-`.env.example` file documents the required variable with an empty value.
+## Environment variables
 
-**Access pattern** — the key is read once at startup by Pydantic
-`BaseSettings` in `config.py` and stored on the `settings` instance. No
-other module calls `os.getenv("ANTHROPIC_API_KEY")` directly. This ensures
-the key is accessed from exactly one place in the codebase.
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| ANTHROPIC_API_KEY | Anthropic API key | Only when `USE_MOCK=false` | empty |
+| AUTODOC_USE_MOCK | Use mock LLM responses | No | `true` |
+| AUTODOC_OUTPUT_DIR | Output directory for generated docs | No | `./output` |
+| AUTODOC_TEMP_DIR | Temp directory for repo clones | No | `./temp_repos` |
+| AUTODOC_LOG_LEVEL | Logging verbosity | No | `INFO` |
+| AUTODOC_LOG_FILE | Log file path — empty string to disable | No | `./output/autodoc.log` |
 
-**Mock mode** — when `AUTODOC_USE_MOCK=true` (the default), the API key
-is never read or used. `get_llm_client()` returns `MockLLMClient` without
-touching the key field at all. This means the project is safe to develop,
-test, and demonstrate without ever exposing a real credential.
+## Local setup
 
-## Repository access
+**Step 1 — Clone the repository**
+```bash
+git clone https://github.com/yourusername/autodoc-agent.git
+cd autodoc-agent
+```
 
-When a GitHub URL is provided as input, AutoDoc clones the repository
-into a temporary directory using `gitpython` with `depth=1` (shallow
-clone). The temporary directory is always cleaned up in a `try/finally`
-block in `main.py` regardless of whether the run succeeds or fails.
+**Step 2 — Install all dependencies**
+```bash
+uv sync
+```
+Creates `.venv/` and installs everything from `pyproject.toml`.
+Run once initially, then again after any dependency changes.
 
-Private repositories require the user's git credentials to be configured
-in their local git environment — AutoDoc passes no credentials itself and
-stores nothing beyond the temporary clone lifetime.
+**Step 3 — Configure environment**
+```bash
+cp .env.example .env
+```
+Default values work immediately. No edits needed for mock mode.
 
-## Security measures
+**Step 4 — Run against a local project**
+```bash
+uv run python main.py --input ./path/to/your/project
+```
 
-| Measure | Implementation |
-|---------|---------------|
-| API key never hardcoded | Pydantic BaseSettings + .env pattern |
-| API key never logged | logger calls never reference the key field |
-| .env gitignored | Enforced in .gitignore at project root |
-| Temp repos always cleaned up | try/finally in main.py |
-| No outbound requests beyond LLM | Only anthropic SDK makes network calls |
-| Shallow clone only | depth=1 limits exposure to latest commit |
+**Step 5 — Run against a GitHub repository**
+```bash
+uv run python main.py --input https://github.com/username/repo
+```
 
-## Key classes and functions
+Output is written to `output/` as five numbered Markdown files.
 
-`autodoc.config.Settings.anthropic_api_key` — the only field that holds
-the API key. Declared with `alias="ANTHROPIC_API_KEY"` to map from the
-standard env var name without the `AUTODOC_` prefix.
+## Running tests
 
-`autodoc.llm.get_llm_client()` — the only function that reads
-`AUTODOC_USE_MOCK` and decides whether the API key is needed. If mock
-mode is active, the key is never accessed.
+```bash
+uv run pytest                           # all 65 tests
+uv run pytest -v                        # verbose with test names
+uv run pytest --tb=short                # short tracebacks on failure
+uv run pytest tests/test_ingestion.py   # ingestion layer — 16 tests
+uv run pytest tests/test_agents.py      # agent pipeline — 12 tests
+uv run pytest tests/test_writers.py     # prompt + writers — 37 tests
+uv run pytest --cov=autodoc             # with coverage report
+```
 
-`autodoc.ingestion.fetcher.cleanup()` — ensures cloned repositories are
-removed from disk. Called in `main.py`'s `finally` block so cleanup
-happens even when exceptions occur mid-run.
+## CI/CD
+No CI/CD configuration has been added to this project yet. A recommended
+basic pipeline for GitHub Actions:
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v2
+      - run: uv sync
+      - run: uv run pytest --tb=short
+    env:
+      AUTODOC_USE_MOCK: "true"
+```
+
+## Switching to real LLM mode
+
+Edit `.env`:
+```bash
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+AUTODOC_USE_MOCK=false
+```
+
+Zero code changes needed anywhere. The factory in `autodoc/llm/__init__.py`
+handles the swap automatically.
+
+## Debug mode
+
+```bash
+# In .env
+AUTODOC_LOG_LEVEL=DEBUG
+```
+
+Surfaces per-file parse results, dependency edges, Jinja2 template
+rendering details, prompt lengths, mock routing decisions, and LLM
+response sizes. Logs written to both terminal and `output/autodoc.log`.
+
+## Production considerations
+AutoDoc has no server component, no database, and no persistent state
+between runs. Each invocation is fully self-contained.
+
+For CI/CD pipeline integration:
+```bash
+uv run python main.py --input .
+```
+
+The process exits with code `0` on success and `1` on unhandled error —
+standard for pipeline steps.
+
+For Docker:
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY . .
+RUN pip install uv && uv sync
+ENTRYPOINT ["uv", "run", "python", "main.py"]
+```
