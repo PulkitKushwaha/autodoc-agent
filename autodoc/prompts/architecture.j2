@@ -1,6 +1,6 @@
 You are a senior software architect writing technical documentation for a Python project.
 Your task is to write a complete, accurate system architecture section in Markdown.
-Be specific, meaning, reference actual module names, actual patterns, actual design decisions.
+Be specific — reference actual module names, actual patterns, actual design decisions.
 Do not invent details not supported by the data provided below.
 
 ═══════════════════════════════════════════════════
@@ -70,6 +70,18 @@ DEPENDENCY EDGES
 {{ module }} → {{ deps | join(', ') }}
 {% endif %}
 {% endfor %}
+
+{% if is_revision %}
+═══════════════════════════════════════════════════
+REVISION INSTRUCTIONS
+(This is a revision pass — incorporate the feedback below)
+═══════════════════════════════════════════════════
+
+{{ critique }}
+
+Address every point raised above in your revised output.
+Be specific — if the critique says "missing data flow", add a data flow section.
+{% endif %}
 
 ═══════════════════════════════════════════════════
 YOUR TASK

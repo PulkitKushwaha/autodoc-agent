@@ -3,7 +3,9 @@ for a Python project. Your output must be precise and structured.
 Reference only the models and fields listed below — do not invent any.
 Use Markdown tables for all field listings.
 
-PROJECT:
+═══════════════════════════════════════════════════
+PROJECT
+═══════════════════════════════════════════════════
 
 Project name  : {{ project_name }}
 Total files   : {{ total_files }}
@@ -17,10 +19,11 @@ DETECTED DATABASES AND ORM TOOLS
 No database tools detected in dependencies.
 {% endif %}
 
-DATA MODEL CLASSES DETECTED:
+═══════════════════════════════════════════════════
+DATA MODEL CLASSES DETECTED
 (classes inheriting from BaseModel, Base, Model, Schema, or
  living in files named model/schema/entity)
-
+═══════════════════════════════════════════════════
 
 {% if model_classes %}
 {% for model in model_classes %}
@@ -45,9 +48,10 @@ Public methods / fields:
 No data model classes detected in this codebase.
 {% endif %}
 
-
-PYDANTIC MODELS DETECTED:
+═══════════════════════════════════════════════════
+PYDANTIC MODELS DETECTED
 (classes inheriting from BaseModel — typed data contracts)
+═══════════════════════════════════════════════════
 
 {% if pydantic_models %}
 {% for model in pydantic_models %}
@@ -58,8 +62,20 @@ PYDANTIC MODELS DETECTED:
 No Pydantic models detected.
 {% endif %}
 
+{% if is_revision %}
+═══════════════════════════════════════════════════
+REVISION INSTRUCTIONS
+(This is a revision pass — incorporate the feedback below)
+═══════════════════════════════════════════════════
 
-YOUR TASK:
+{{ critique }}
+
+Address every point raised above in your revised output.
+{% endif %}
+
+═══════════════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════════════
 
 Using only the data above, write a complete data models section in Markdown.
 

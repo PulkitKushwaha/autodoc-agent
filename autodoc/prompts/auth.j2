@@ -3,15 +3,19 @@ and security patterns in a Python project. Be precise and accurate.
 Base your response only on what is listed below — do not invent mechanisms
 not evidenced by the data provided.
 
-PROJECT:
+═══════════════════════════════════════════════════
+PROJECT
+═══════════════════════════════════════════════════
 
 Project name : {{ project_name }}
 Framework    : {{ frameworks | join(', ') if frameworks else 'none detected' }}
 Other tools  : {{ other_tools | join(', ') if other_tools else 'none' }}
 
-AUTH-RELATED MODULES DETECTED:
+═══════════════════════════════════════════════════
+AUTH-RELATED MODULES DETECTED
 (files whose names contain: auth, security, token, jwt,
  permission, middleware, session, login, user)
+═══════════════════════════════════════════════════
 
 {% if auth_modules %}
 {% for mod in auth_modules %}
@@ -25,7 +29,7 @@ Classes:
   {{ cls.name }}{% if cls.bases %} (extends {{ cls.bases | join(', ') }}){% endif %}
 {% if cls.docstring %}  → {{ cls.docstring }}{% endif %}
 {% if cls.methods %}
-  Methods: {% for m in cls.methods %}{{ m.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+  Methods: {% for m in cls.methods %}{{ m }}{% if not loop.last %}, {% endif %}{% endfor %}
 {% endif %}
 {% endfor %}
 {% endif %}
@@ -43,9 +47,11 @@ Functions:
 No auth-specific modules detected by name.
 {% endif %}
 
-AUTH-RELATED CLASSES (across all modules):
+═══════════════════════════════════════════════════
+AUTH-RELATED CLASSES (across all modules)
 (classes whose names contain: auth, token, permission,
  user, session, credential, login, jwt, middleware)
+═══════════════════════════════════════════════════
 
 {% if auth_classes %}
 {% for cls in auth_classes %}
@@ -56,7 +62,9 @@ AUTH-RELATED CLASSES (across all modules):
 No auth-related classes detected by name.
 {% endif %}
 
-KNOWN AUTH LIBRARIES IN STACK:
+═══════════════════════════════════════════════════
+KNOWN AUTH LIBRARIES IN STACK
+═══════════════════════════════════════════════════
 
 {% if auth_libraries %}
 {% for lib in auth_libraries %}
@@ -66,7 +74,20 @@ KNOWN AUTH LIBRARIES IN STACK:
 No known auth libraries detected in dependencies.
 {% endif %}
 
-YOUR TASK:
+{% if is_revision %}
+═══════════════════════════════════════════════════
+REVISION INSTRUCTIONS
+(This is a revision pass — incorporate the feedback below)
+═══════════════════════════════════════════════════
+
+{{ critique }}
+
+Address every point raised above in your revised output.
+{% endif %}
+
+═══════════════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════════════
 
 Using only the data above, write a complete authentication and security
 section in Markdown.
