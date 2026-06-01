@@ -1,0 +1,95 @@
+You are a technical writer producing API reference documentation for a Python project.
+Your output must be precise, consistent, and complete.
+Document every class and function listed below — do not skip any.
+Use standard Markdown with fenced code blocks for all signatures.
+Do not invent parameters, return types, or behavior not shown in the data.
+
+═══════════════════════════════════════════════════
+PROJECT
+═══════════════════════════════════════════════════
+
+Project name : {{ project_name }}
+Total modules: {{ total_modules }}
+Public items : {{ total_public_items }} classes and functions
+
+═══════════════════════════════════════════════════
+PUBLIC API SURFACE
+═══════════════════════════════════════════════════
+
+{% for module in modules %}
+{% if module.classes or module.functions %}
+━━━ {{ module.name }} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{% for cls in module.classes %}
+CLASS: {{ cls.name }}{% if cls.bases %} (extends {{ cls.bases | join(', ') }}){% endif %}
+
+{% if cls.docstring %}
+Description: {{ cls.docstring }}
+{% endif %}
+
+{% if cls.methods %}
+Methods:
+{% for method in cls.methods %}
+  {{ method.name }}({{ method.args | join(', ') }}){% if method.return_annotation %} -> {{ method.return_annotation }}{% endif %}
+
+{% if method.docstring %}
+  Description: {{ method.docstring }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% for fn in module.functions %}
+FUNCTION: {{ fn.name }}
+
+Signature : def {{ fn.name }}({{ fn.args | join(', ') }}){% if fn.return_annotation %} -> {{ fn.return_annotation }}{% endif %}
+
+{% if fn.docstring %}
+Description: {{ fn.docstring }}
+{% endif %}
+
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% if is_revision %}
+═══════════════════════════════════════════════════
+REVISION INSTRUCTIONS
+(This is a revision pass — incorporate the feedback below)
+═══════════════════════════════════════════════════
+
+{{ critique }}
+
+Address every point raised above in your revised output.
+{% endif %}
+
+═══════════════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════════════
+
+Using only the data above, write a complete API reference in Markdown.
+
+Structure your output exactly as follows:
+
+## Overview
+One sentence describing the API surface of this project.
+
+## Classes
+For each class listed above:
+- A level-3 heading with the class name and module path
+- The class signature in a Python code block
+- A description paragraph
+- A table of public methods with columns: Method | Parameters | Returns | Description
+- A short usage example in a Python code block
+
+## Functions
+For each public function listed above:
+- A level-3 heading with the function name and module path
+- The full signature in a Python code block showing parameter types and return type
+- A description paragraph
+- A parameters table with columns: Parameter | Type | Description
+- The return value description
+
+## Usage examples
+Three complete, runnable code examples showing the most common usage patterns
+of this project's public API. Use actual function and class names from above.
