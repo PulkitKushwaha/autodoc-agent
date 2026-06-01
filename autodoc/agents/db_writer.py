@@ -1,6 +1,7 @@
 from autodoc.agents.base import BaseAgent
 from autodoc.logger import get_logger
-from autodoc.models.manifest import CodebaseManifest, FileInfo
+from autodoc.models.doc_state import DocState
+from autodoc.models.manifest import CodebaseManifest
 from autodoc.utils.prompt_renderer import render_prompt
 
 logger = get_logger(__name__)
@@ -21,7 +22,7 @@ class DBWriterAgent(BaseAgent):
 
     Detects SQLAlchemy ORM models, Pydantic models, and dataclasses.
     Extracts class hierarchies, field definitions, and relationships.
-    Renders db.j2 with full model context before sending to the LLM.
+    Revision-aware — passes critique to template on second pass.
     """
 
     _state_key = "db_doc"
@@ -31,6 +32,12 @@ class DBWriterAgent(BaseAgent):
         "for all field listings. You reference only what is actually present "
         "in the codebase — you never invent fields or relationships."
     )
+
+    def run(self, state: DocState) -> DocState:
+        """Store critique from state before delegating to base run()."""
+        critique = state.get("critique", {})
+        self._critique = critique.get("db", "")
+        return super().run(state)
 
     def _build_prompt(self, manifest: CodebaseManifest) -> str:
         model_classes = self._extract_model_classes(manifest)
@@ -43,11 +50,13 @@ class DBWriterAgent(BaseAgent):
         )
 
         context = {
-            "project_name":   manifest.project_name,
-            "total_files":    manifest.total_files,
-            "databases":      manifest.stack.databases,
-            "model_classes":  model_classes,
+            "project_name":    manifest.project_name,
+            "total_files":     manifest.total_files,
+            "databases":       manifest.stack.databases,
+            "model_classes":   model_classes,
             "pydantic_models": pydantic_models,
+            "critique":        getattr(self, "_critique", ""),
+            "is_revision":     bool(getattr(self, "_critique", "")),
         }
 
         return render_prompt("db.j2", context)
@@ -66,26 +75,25 @@ class DBWriterAgent(BaseAgent):
             )
             for cls in file.classes:
                 is_model_class = any(
-                    base in _MODEL_BASE_NAMES
-                    for base in cls.bases
+                    base in _MODEL_BASE_NAMES for base in cls.bases
                 )
                 if is_model_class or is_model_file:
                     public_methods = [
                         {
-                            "name": m.name,
+                            "name":              m.name,
                             "return_annotation": m.return_annotation,
-                            "docstring": m.docstring,
+                            "docstring":         m.docstring,
                         }
                         for m in cls.methods
                         if not m.name.startswith("_")
                         or m.name in ("__str__", "__repr__")
                     ]
                     models.append({
-                        "name":    cls.name,
-                        "module":  file.module_name,
-                        "bases":   cls.bases,
+                        "name":      cls.name,
+                        "module":    file.module_name,
+                        "bases":     cls.bases,
                         "docstring": cls.docstring,
-                        "methods": public_methods,
+                        "methods":   public_methods,
                     })
                     logger.debug(
                         "DBWriterAgent detected model: %s in %s",

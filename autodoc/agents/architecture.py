@@ -1,5 +1,6 @@
 from autodoc.agents.base import BaseAgent
 from autodoc.logger import get_logger
+from autodoc.models.doc_state import DocState
 from autodoc.models.manifest import CodebaseManifest, FileInfo
 from autodoc.utils.prompt_renderer import render_prompt
 
@@ -10,10 +11,10 @@ class ArchitectureAgent(BaseAgent):
     """
     Writes the system architecture section.
 
-    Extracts layered structural information from the manifest —
-    entry points, core modules, dependency edges, per-file summaries —
-    and renders the architecture.j2 prompt template with full context
-    before sending to the LLM.
+    Extracts entry points, core modules, dependency edges, and per-file
+    summaries. Renders architecture.j2 with full structural context.
+    On revision pass, injects critic feedback via is_revision + critique
+    template variables.
     """
 
     _state_key = "architecture_doc"
@@ -25,6 +26,12 @@ class ArchitectureAgent(BaseAgent):
         "in the code — never use generic placeholders."
     )
 
+    def run(self, state: DocState) -> DocState:
+        """Store critique from state before delegating to base run()."""
+        critique = state.get("critique", {})
+        self._critique = critique.get("architecture", "")
+        return super().run(state)
+
     def _build_prompt(self, manifest: CodebaseManifest) -> str:
         entry_points = manifest.dependency_graph.get_entry_points()
         core_modules = manifest.dependency_graph.get_core_modules()
@@ -34,17 +41,6 @@ class ArchitectureAgent(BaseAgent):
             entry_points,
             core_modules,
         )
-
-        files_context = [
-            self._build_file_context(f)
-            for f in manifest.files
-        ]
-
-        edges = {
-            module: deps
-            for module, deps in manifest.dependency_graph.edges.items()
-            if deps
-        }
 
         context = {
             "project_name":    manifest.project_name,
@@ -57,17 +53,19 @@ class ArchitectureAgent(BaseAgent):
             "other_tools":     manifest.stack.other_tools,
             "entry_points":    entry_points,
             "core_modules":    core_modules,
-            "files":           files_context,
-            "edges":           edges,
+            "files":           [self._build_file_context(f) for f in manifest.files],
+            "edges":           {
+                module: deps
+                for module, deps in manifest.dependency_graph.edges.items()
+                if deps
+            },
+            "critique":    getattr(self, "_critique", ""),
+            "is_revision": bool(getattr(self, "_critique", "")),
         }
 
         return render_prompt("architecture.j2", context)
 
     def _build_file_context(self, file: FileInfo) -> dict:
-        """
-        Build a serializable dict for a single file's template context.
-        Extracts only what the template needs — names, not full objects.
-        """
         return {
             "module_name": file.module_name,
             "line_count":  file.line_count,

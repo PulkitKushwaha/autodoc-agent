@@ -1,5 +1,6 @@
 from autodoc.agents.base import BaseAgent
 from autodoc.logger import get_logger
+from autodoc.models.doc_state import DocState
 from autodoc.models.manifest import CodebaseManifest
 from autodoc.utils.prompt_renderer import render_prompt
 
@@ -16,17 +17,17 @@ _AUTH_CLASS_KEYWORDS = {
 }
 
 _AUTH_LIBRARIES = {
-    "python_jose":    "python-jose (JWT)",
-    "jwt":            "PyJWT",
-    "passlib":        "passlib (password hashing)",
-    "bcrypt":         "bcrypt",
-    "authlib":        "Authlib (OAuth)",
-    "fastapi_users":  "FastAPI Users",
-    "django_allauth": "django-allauth",
-    "flask_login":    "Flask-Login",
+    "python_jose":        "python-jose (JWT)",
+    "jwt":                "PyJWT",
+    "passlib":            "passlib (password hashing)",
+    "bcrypt":             "bcrypt",
+    "authlib":            "Authlib (OAuth)",
+    "fastapi_users":      "FastAPI Users",
+    "django_allauth":     "django-allauth",
+    "flask_login":        "Flask-Login",
     "flask_jwt_extended": "Flask-JWT-Extended",
-    "casbin":         "Casbin (authorization)",
-    "pyjwt":          "PyJWT",
+    "casbin":             "Casbin (authorization)",
+    "pyjwt":              "PyJWT",
 }
 
 
@@ -35,8 +36,8 @@ class AuthWriterAgent(BaseAgent):
     Writes the authentication and security section.
 
     Detects auth patterns by scanning module names, class names,
-    and dependency stack for known auth libraries. Renders auth.j2
-    with the full discovered context.
+    and dependency stack for known auth libraries.
+    Revision-aware — passes critique to template on second pass.
     """
 
     _state_key = "auth_doc"
@@ -44,30 +45,36 @@ class AuthWriterAgent(BaseAgent):
         "You are a security-focused technical writer. "
         "Your authentication sections are accurate and honest about uncertainty. "
         "You document what is actually present in the code — "
-        "you never assume an auth mechanism that is not evidenced by the data. "
+        "you never assume an auth mechanism not evidenced by the data. "
         "Your security measures table is specific and actionable."
     )
 
+    def run(self, state: DocState) -> DocState:
+        """Store critique from state before delegating to base run()."""
+        critique = state.get("critique", {})
+        self._critique = critique.get("auth", "")
+        return super().run(state)
+
     def _build_prompt(self, manifest: CodebaseManifest) -> str:
-        auth_modules = self._extract_auth_modules(manifest)
-        auth_classes = self._extract_auth_classes(manifest)
+        auth_modules   = self._extract_auth_modules(manifest)
+        auth_classes   = self._extract_auth_classes(manifest)
         auth_libraries = self._detect_auth_libraries(manifest)
 
         logger.debug(
             "AuthWriterAgent context — auth modules: %d | "
             "auth classes: %d | auth libraries: %s",
-            len(auth_modules),
-            len(auth_classes),
-            auth_libraries,
+            len(auth_modules), len(auth_classes), auth_libraries,
         )
 
         context = {
-            "project_name":  manifest.project_name,
-            "frameworks":    manifest.stack.frameworks,
-            "other_tools":   manifest.stack.other_tools,
-            "auth_modules":  auth_modules,
-            "auth_classes":  auth_classes,
+            "project_name":   manifest.project_name,
+            "frameworks":     manifest.stack.frameworks,
+            "other_tools":    manifest.stack.other_tools,
+            "auth_modules":   auth_modules,
+            "auth_classes":   auth_classes,
             "auth_libraries": auth_libraries,
+            "critique":       getattr(self, "_critique", ""),
+            "is_revision":    bool(getattr(self, "_critique", "")),
         }
 
         return render_prompt("auth.j2", context)
@@ -86,7 +93,7 @@ class AuthWriterAgent(BaseAgent):
                             "name":      cls.name,
                             "bases":     cls.bases,
                             "docstring": cls.docstring,
-                            "methods": [
+                            "methods":   [
                                 m.name for m in cls.methods
                                 if not m.name.startswith("__")
                             ],
@@ -143,8 +150,7 @@ class AuthWriterAgent(BaseAgent):
             t.lower().replace("-", "_").replace(" ", "_")
             for t in all_tools
         ]
-        found = []
-        for pkg, label in _AUTH_LIBRARIES.items():
-            if any(pkg in tool for tool in normalised):
-                found.append(label)
-        return found
+        return [
+            label for pkg, label in _AUTH_LIBRARIES.items()
+            if any(pkg in tool for tool in normalised)
+        ]
