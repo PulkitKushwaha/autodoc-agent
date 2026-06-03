@@ -1,0 +1,242 @@
+{
+  "project_name": "autodoc",
+  "root_path": "/home/user/autodoc-agent/autodoc",
+  "source": "./autodoc",
+  "total_files": 33,
+  "total_lines": 1987,
+  "files": [
+    {
+      "path": "autodoc/__init__.py",
+      "module_name": "autodoc",
+      "docstring": null,
+      "classes": [],
+      "functions": [],
+      "imports": [],
+      "line_count": 0
+    },
+    {
+      "path": "autodoc/config.py",
+      "module_name": "autodoc.config",
+      "docstring": null,
+      "classes": [
+        {
+          "name": "Settings",
+          "bases": ["BaseSettings"],
+          "docstring": null,
+          "methods": [
+            {
+              "name": "ensure_dirs",
+              "args": [],
+              "return_annotation": "None",
+              "docstring": "Create output and temp directories if they do not exist.",
+              "line_number": 24,
+              "is_method": true
+            }
+          ],
+          "line_number": 8
+        }
+      ],
+      "functions": [],
+      "imports": [
+        { "module": "pathlib", "names": ["Path"], "is_from_import": true },
+        { "module": "pydantic", "names": ["Field"], "is_from_import": true },
+        { "module": "pydantic_settings", "names": ["BaseSettings", "SettingsConfigDict"], "is_from_import": true }
+      ],
+      "line_count": 30
+    },
+    {
+      "path": "autodoc/cli.py",
+      "module_name": "autodoc.cli",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "run",
+          "args": [
+            { "name": "input_path", "annotation": "str" },
+            { "name": "output_dir", "annotation": "Path" },
+            { "name": "formats", "annotation": "str" },
+            { "name": "log_level", "annotation": "Optional[str]" }
+          ],
+          "return_annotation": "None",
+          "docstring": "Generate technical documentation for a Python codebase.",
+          "line_number": 38,
+          "is_method": false
+        },
+        {
+          "name": "version",
+          "args": [],
+          "return_annotation": "None",
+          "docstring": "Show AutoDoc version.",
+          "line_number": 182,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "typer", "names": [], "is_from_import": false },
+        { "module": "rich.console", "names": ["Console"], "is_from_import": true },
+        { "module": "autodoc.config", "names": ["settings"], "is_from_import": true },
+        { "module": "autodoc.logger", "names": ["setup_logging", "get_logger"], "is_from_import": true }
+      ],
+      "line_count": 192
+    },
+    {
+      "path": "autodoc/agents/critic.py",
+      "module_name": "autodoc.agents.critic",
+      "docstring": null,
+      "classes": [
+        {
+          "name": "CriticAgent",
+          "bases": ["BaseAgent"],
+          "docstring": "Reviews all generated documentation sections for quality and completeness.",
+          "methods": [
+            {
+              "name": "run",
+              "args": [{ "name": "state", "annotation": "DocState" }],
+              "return_annotation": "DocState",
+              "docstring": "Override base run() — critic writes to multiple state keys.",
+              "line_number": 38,
+              "is_method": true
+            },
+            {
+              "name": "_parse_response",
+              "args": [{ "name": "raw", "annotation": "str" }],
+              "return_annotation": "dict",
+              "docstring": "Parse LLM JSON response, strip markdown fences, handle malformed JSON.",
+              "line_number": 98,
+              "is_method": true
+            }
+          ],
+          "line_number": 28
+        }
+      ],
+      "functions": [],
+      "imports": [
+        { "module": "json", "names": [], "is_from_import": false },
+        { "module": "autodoc.agents.base", "names": ["BaseAgent"], "is_from_import": true },
+        { "module": "autodoc.utils.prompt_renderer", "names": ["render_prompt"], "is_from_import": true }
+      ],
+      "line_count": 118
+    },
+    {
+      "path": "autodoc/renderers/markdown.py",
+      "module_name": "autodoc.renderers.markdown",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "render_markdown",
+          "args": [
+            { "name": "state", "annotation": "DocState" },
+            { "name": "output_dir", "annotation": "Path" }
+          ],
+          "return_annotation": "Path",
+          "docstring": "Assemble all final_docs sections into a single Markdown file with a table of contents.",
+          "line_number": 22,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "jinja2", "names": ["Environment", "FileSystemLoader", "StrictUndefined"], "is_from_import": true },
+        { "module": "autodoc.models.doc_state", "names": ["DocState"], "is_from_import": true }
+      ],
+      "line_count": 62
+    },
+    {
+      "path": "autodoc/renderers/html_site.py",
+      "module_name": "autodoc.renderers.html_site",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "render_html_site",
+          "args": [
+            { "name": "state", "annotation": "DocState" },
+            { "name": "output_dir", "annotation": "Path" }
+          ],
+          "return_annotation": "Path",
+          "docstring": "Generate a multi-page static HTML documentation site.",
+          "line_number": 48,
+          "is_method": false
+        },
+        {
+          "name": "_markdown_to_html",
+          "args": [{ "name": "md", "annotation": "str" }],
+          "return_annotation": "str",
+          "docstring": "Minimal Markdown to HTML conversion for the HTML site.",
+          "line_number": 12,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "re", "names": [], "is_from_import": false },
+        { "module": "jinja2", "names": ["Environment", "FileSystemLoader", "StrictUndefined"], "is_from_import": true },
+        { "module": "autodoc.renderers.markdown", "names": ["SECTION_TITLES"], "is_from_import": true }
+      ],
+      "line_count": 98
+    },
+    {
+      "path": "autodoc/renderers/pdf.py",
+      "module_name": "autodoc.renderers.pdf",
+      "docstring": null,
+      "classes": [],
+      "functions": [
+        {
+          "name": "render_pdf",
+          "args": [
+            { "name": "state", "annotation": "DocState" },
+            { "name": "output_dir", "annotation": "Path" }
+          ],
+          "return_annotation": "Path",
+          "docstring": "Generate a PDF from the HTML site output using WeasyPrint.",
+          "line_number": 12,
+          "is_method": false
+        }
+      ],
+      "imports": [
+        { "module": "autodoc.logger", "names": ["get_logger"], "is_from_import": true },
+        { "module": "autodoc.models.doc_state", "names": ["DocState"], "is_from_import": true }
+      ],
+      "line_count": 58
+    }
+  ],
+  "stack": {
+    "language": "python",
+    "frameworks": [],
+    "databases": [],
+    "test_frameworks": ["pytest"],
+    "task_queues": [],
+    "other_tools": ["Pydantic", "LangGraph", "Anthropic", "Rich", "Typer"]
+  },
+  "dependency_graph": {
+    "edges": {
+      "autodoc": [],
+      "autodoc.config": [],
+      "autodoc.logger": [],
+      "autodoc.cli": ["autodoc.config", "autodoc.logger", "autodoc.ingestion.fetcher", "autodoc.graph.pipeline", "autodoc.renderers.markdown", "autodoc.renderers.html_site", "autodoc.renderers.pdf"],
+      "autodoc.agents.base": ["autodoc.llm", "autodoc.logger", "autodoc.models.doc_state", "autodoc.models.manifest"],
+      "autodoc.agents.critic": ["autodoc.agents.base", "autodoc.logger", "autodoc.utils.prompt_renderer"],
+      "autodoc.agents.architecture": ["autodoc.agents.base", "autodoc.logger", "autodoc.utils.prompt_renderer"],
+      "autodoc.agents.api_writer": ["autodoc.agents.base", "autodoc.logger", "autodoc.utils.prompt_renderer"],
+      "autodoc.agents.db_writer": ["autodoc.agents.base", "autodoc.logger", "autodoc.utils.prompt_renderer"],
+      "autodoc.agents.auth_writer": ["autodoc.agents.base", "autodoc.logger", "autodoc.utils.prompt_renderer"],
+      "autodoc.agents.deploy_writer": ["autodoc.agents.base", "autodoc.logger", "autodoc.utils.prompt_renderer"],
+      "autodoc.agents.planner": ["autodoc.logger", "autodoc.models.doc_state", "autodoc.models.manifest"],
+      "autodoc.graph.pipeline": ["autodoc.agents.architecture", "autodoc.agents.api_writer", "autodoc.agents.db_writer", "autodoc.agents.auth_writer", "autodoc.agents.deploy_writer", "autodoc.agents.critic", "autodoc.agents.planner", "autodoc.logger", "autodoc.models.doc_state"],
+      "autodoc.ingestion.fetcher": ["autodoc.logger"],
+      "autodoc.ingestion.parser": ["autodoc.logger", "autodoc.models.manifest"],
+      "autodoc.ingestion.graph": ["autodoc.logger", "autodoc.models.manifest"],
+      "autodoc.ingestion.detector": ["autodoc.logger", "autodoc.models.manifest"],
+      "autodoc.models.manifest": [],
+      "autodoc.models.doc_state": [],
+      "autodoc.llm": ["autodoc.llm.base"],
+      "autodoc.llm.base": [],
+      "autodoc.llm.client": ["autodoc.llm.base", "autodoc.logger"],
+      "autodoc.llm.mock": ["autodoc.llm.base", "autodoc.logger"],
+      "autodoc.utils.prompt_renderer": ["autodoc.logger"],
+      "autodoc.renderers.markdown": ["autodoc.logger", "autodoc.models.doc_state"],
+      "autodoc.renderers.html_site": ["autodoc.logger", "autodoc.models.doc_state", "autodoc.renderers.markdown"],
+      "autodoc.renderers.pdf": ["autodoc.logger", "autodoc.models.doc_state"]
+    }
+  }
+}
