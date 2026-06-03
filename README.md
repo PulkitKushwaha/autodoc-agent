@@ -1,6 +1,6 @@
-# AutoDoc — AI-powered technical documentation agent
+# AutoDoc: An AI-powered technical documentation agent
 
-> Point it at any Python repository. Get back complete technical documentation — architecture, API reference, data models, deployment guide, and more.
+> This is one of my favourite project outcomes, the "Autodoc Agent". Point it at any Python repository. Get back complete technical documentation like architecture, API reference, data models, deployment guide, and more.
 
 AutoDoc is a multi-agent system built on LangGraph that ingests a Python codebase, coordinates five specialist LLM-powered writer agents, passes all generated sections through a critic agent that scores quality and triggers revision on weak sections, then renders the final output as Markdown, a static HTML site, and PDF.
 
